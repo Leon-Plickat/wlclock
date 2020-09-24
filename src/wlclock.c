@@ -162,18 +162,40 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		{"verbose",  no_argument,       NULL, 'v'},
 		{"version",  no_argument,       NULL, 'V'},
 
-		{"output",   required_argument, NULL, 100},
-		{"no-input", no_argument,       NULL, 101}
+		{"anchor",            required_argument, NULL, 1100},
+		{"background-colour", required_argument, NULL, 1101},
+		{"border-colour",     required_argument, NULL, 1102},
+		{"border-size",       required_argument, NULL, 1103},
+		{"clock-colour",      required_argument, NULL, 1104},
+		{"exclusive-zone",    required_argument, NULL, 1105},
+		{"layer",             required_argument, NULL, 1106},
+		{"margin",            required_argument, NULL, 1107},
+		{"namespace",         required_argument, NULL, 1108},
+		{"no-input",          no_argument,       NULL, 1109},
+		{"output",            required_argument, NULL, 1110},
+		{"corner-radius",     required_argument, NULL, 1111},
+		{"size",              required_argument, NULL, 1112},
 	};
 
 	const char *usage =
 		"Usage: wlclock [options]\n"
 		"\n"
-		"  -h, --help      Show this helptext.\n"
-		"  -v, --verbose   Increase verbosity of output.\n"
-		"  -V, --version   Show the version.\n"
-		"      --output    Name of output the clock should be displayed on.\n"
-		"      --no-input  The clock surface will not catch input events.\n"
+		"  -h, --help               Show this help text.\n"
+		"  -v, --verbose            Increase verbosity of output.\n"
+		"  -V, --version            Show the version.\n"
+		"      --anchor             Set the layer shell anchors.\n"
+		"      --background-colour  Background colour.\n"
+		"      --border-colour      Border colour.\n"
+		"      --border-size        Size of the border.\n"
+		"      --clock-colour       Colour of the clock elements.\n"
+		"      --exclusive-zone     Exclusive zone of the layer surface.\n"
+		"      --layer              Layer of the layer surface.\n"
+		"      --margin             Directional margins.\n"
+		"      --namespace          Namespace of the layer surface.\n"
+		"      --no-input           Make inputs surface pass trough the layer surface.\n"
+		"      --output             The output which the clock will be displayed.\n"
+		"      --corner-radius      Corner radii.\n"
+		"      --size               Size of the clock.\n"
 		"\n";
 
 	int opt;
@@ -195,12 +217,46 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			clock->ret = EXIT_SUCCESS;
 			return false;
 
-		case 100:
+		case 1100: // TODO anchor
+			break;
+
+		case 1101: // TODO background colour
+			break;
+
+		case 1102: // TODO border colour
+			break;
+
+		case 1103: // TODO border size
+			break;
+
+		case 1104: // TODO clock colour
+			break;
+
+		case 1105: // TODO exclusive zone
+			break;
+
+		case 1106: // TODO layer
+			break;
+
+		case 1107: // TODO margins
+			break;
+
+		case 1108: /* Namespace */
+			set_string(&clock->namespace, optarg);
+			break;
+
+		case 1109: /* Input */
+			clock->input = false;
+			break;
+
+		case 1110: /* Output */
 			set_string(&clock->output, optarg);
 			break;
 
-		case 101:
-			clock->input = false;
+		case 1111: // TODO corner radii
+			break;
+
+		case 1112: // TODO size
 			break;
 
 		default:
