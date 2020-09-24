@@ -45,8 +45,10 @@ executable(
   'wlclock',
   files(
     'src/buffer.c',
+    'src/colour.c',
     'src/misc.c',
     'src/output.c',
+    'src/render.c',
     'src/surface.c',
     'src/wlclock.c',
   ),

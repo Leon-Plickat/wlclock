@@ -18,6 +18,7 @@
 #include"misc.h"
 #include"surface.h"
 #include"buffer.h"
+#include"render.h"
 
 static uint32_t min (uint32_t a, uint32_t b)
 {
@@ -149,7 +150,7 @@ void update_surface (struct Wlclock_surface *surface)
 	if ( surface == NULL || ! surface->configured )
 		return;
 	configure_layer_surface(surface);
-	// render_surface_frame(surface); // TODO
+	render_surface_frame(surface);
 	wl_surface_commit(surface->surface);
 }
 

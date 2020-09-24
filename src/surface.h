@@ -18,7 +18,8 @@ struct Wlclock_surface
 	struct zwlr_layer_surface_v1 *layer_surface;
 
 	int32_t size;
-	struct Wlclock_buffer buffers[2];
+	struct Wlclock_buffer  buffers[2];
+	struct Wlclock_buffer *current_buffer;
 	bool configured;
 };
 

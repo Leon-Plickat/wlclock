@@ -24,6 +24,7 @@
 #include"misc.h"
 #include"output.h"
 #include"surface.h"
+#include"colour.h"
 
 static void registry_handle_global (void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version)
@@ -220,16 +221,19 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		case 1100: // TODO anchor
 			break;
 
-		case 1101: // TODO background colour
+		case 1101: /* Background colour */
+			colour_from_string(&clock->background_colour, optarg);
 			break;
 
-		case 1102: // TODO border colour
+		case 1102: /* Border colour */
+			colour_from_string(&clock->border_colour, optarg);
 			break;
 
 		case 1103: // TODO border size
 			break;
 
-		case 1104: // TODO clock colour
+		case 1104: /* Clock colour */
+			colour_from_string(&clock->clock_colour, optarg);
 			break;
 
 		case 1105: // TODO exclusive zone
@@ -336,6 +340,15 @@ int main (int argc, char *argv[])
 	clock.anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 	set_string(&clock.namespace, "wlclock");
 	wl_list_init(&clock.outputs);
+	clock.border_bottom = clock.border_top
+		= clock.border_left = clock.border_right = 1;
+	clock.radius_bottom_left = clock.radius_bottom_right
+		= clock.radius_top_left = clock.radius_top_right = 5;
+	clock.margin_bottom = clock.margin_top
+		= clock.margin_left = clock.margin_right = 0;
+	colour_from_string(&clock.background_colour, "#000000");
+	colour_from_string(&clock.border_colour,     "#FFFFFF");
+	colour_from_string(&clock.clock_colour,      "#FFFFFF");
 
 	if (! handle_command_flags(&clock, argc, argv))
 		return clock.ret;

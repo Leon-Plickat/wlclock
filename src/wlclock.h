@@ -8,6 +8,8 @@
 
 #include"wlr-layer-shell-unstable-v1-protocol.h"
 
+#include"colour.h"
+
 struct Wlclock
 {
 	struct wl_display             *display;
@@ -35,6 +37,10 @@ struct Wlclock
 	uint32_t radius_top_left, radius_top_right, radius_bottom_left, radius_bottom_right;
 	uint32_t anchor;
 	bool input;
+
+	struct Wlclock_colour background_colour;
+	struct Wlclock_colour border_colour;
+	struct Wlclock_colour clock_colour;
 };
 
 #endif
