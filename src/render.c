@@ -148,40 +148,57 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 	double mr  = scale * 0.6 * size / 2; /* Radii mimick xclock. */
 	double hr  = scale * 0.4 * size / 2;
 	double ir  = scale * 0.075 * size / 2;
-	double tip_phi, back_phi_1, back_phi_2, phi_step_min = 2 * PI / 60, phi_step_h = 2 * PI / 12;
 	struct tm tm = *localtime(&clock->now);
+	
+	double phi_step_min   = 2 * PI / 60;
+	double tip_phi_min    = phi_step_min * (tm.tm_min + 45);
+	double back_phi_1_min = phi_step_min * (tm.tm_min + 45 + 20);
+	double back_phi_2_min = phi_step_min * (tm.tm_min + 45 + 40);
 
-	cairo_save(cairo);
-
-	/* Minutes */
-	tip_phi    = phi_step_min * (tm.tm_min + 45);
-	back_phi_1 = phi_step_min * (tm.tm_min + 45 + 20);
-	back_phi_2 = phi_step_min * (tm.tm_min + 45 + 40);
-	cairo_move_to(cairo, cxy + mr * cos(tip_phi),    cxy + mr * sin(tip_phi));
-	cairo_line_to(cairo, cxy + ir * cos(back_phi_1), cxy + ir * sin(back_phi_1));
-	cairo_line_to(cairo, cxy + ir * cos(back_phi_2), cxy + ir * sin(back_phi_2));
-	cairo_line_to(cairo, cxy + mr * cos(tip_phi),    cxy + mr * sin(tip_phi));
-
-	/* Hours */
-	// TODO optinally make hour hand progress between to hours intstead of instantly snapping
-	tip_phi    = phi_step_h * (tm.tm_hour + 9);
-	back_phi_1 = phi_step_h * (tm.tm_hour + 9 + 4);
-	back_phi_2 = phi_step_h * (tm.tm_hour + 9 + 8);
+	double phi_step_h   = 2 * PI / 12;
+	double tip_phi_h    = phi_step_h * (tm.tm_hour + 9);
+	double back_phi_1_h = phi_step_h * (tm.tm_hour + 9 + 4);
+	double back_phi_2_h = phi_step_h * (tm.tm_hour + 9 + 8);
 	if (! clock->snap)
 	{
 		double prog_phi_step = phi_step_h / 60.0;
-		tip_phi    += tm.tm_min * prog_phi_step;
-		back_phi_1 += tm.tm_min * prog_phi_step;
-		back_phi_2 += tm.tm_min * prog_phi_step;
+		tip_phi_h    += tm.tm_min * prog_phi_step;
+		back_phi_1_h += tm.tm_min * prog_phi_step;
+		back_phi_2_h += tm.tm_min * prog_phi_step;
 	}
-	cairo_move_to(cairo, cxy + hr * cos(tip_phi),    cxy + hr * sin(tip_phi));
-	cairo_line_to(cairo, cxy + ir * cos(back_phi_1), cxy + ir * sin(back_phi_1));
-	cairo_line_to(cairo, cxy + ir * cos(back_phi_2), cxy + ir * sin(back_phi_2));
-	cairo_line_to(cairo, cxy + hr * cos(tip_phi),    cxy + hr * sin(tip_phi));
 
-	cairo_close_path(cairo);
+	cairo_save(cairo);
 	colour_set_cairo_source(cairo, &clock->clock_colour);
-	cairo_fill(cairo);
+
+	if ( clock->hand_style == STYLE_XCLOCK )
+	{
+		/* Minutes */
+		cairo_move_to(cairo, cxy + mr * cos(tip_phi_min),    cxy + mr * sin(tip_phi_min));
+		cairo_line_to(cairo, cxy + ir * cos(back_phi_1_min), cxy + ir * sin(back_phi_1_min));
+		cairo_line_to(cairo, cxy + ir * cos(back_phi_2_min), cxy + ir * sin(back_phi_2_min));
+		cairo_line_to(cairo, cxy + mr * cos(tip_phi_min),    cxy + mr * sin(tip_phi_min));
+
+		/* Hours */
+		cairo_move_to(cairo, cxy + hr * cos(tip_phi_h),    cxy + hr * sin(tip_phi_h));
+		cairo_line_to(cairo, cxy + ir * cos(back_phi_1_h), cxy + ir * sin(back_phi_1_h));
+		cairo_line_to(cairo, cxy + ir * cos(back_phi_2_h), cxy + ir * sin(back_phi_2_h));
+		cairo_line_to(cairo, cxy + hr * cos(tip_phi_h),    cxy + hr * sin(tip_phi_h));
+
+		cairo_close_path(cairo);
+		cairo_fill(cairo);
+	}
+	else if ( clock->hand_style == STYLE_LINES )
+	{
+		/* Minutes */
+		cairo_move_to(cairo, cxy + mr * cos(tip_phi_min), cxy + mr * sin(tip_phi_min));
+		cairo_line_to(cairo, cxy, cxy);
+
+		/* Hours */
+		cairo_line_to(cairo, cxy + hr * cos(tip_phi_h),    cxy + hr * sin(tip_phi_h));
+
+		cairo_set_line_width(cairo, scale * clock->clock_size);
+		cairo_stroke(cairo);
+	}
 
 	cairo_restore(cairo);
 }

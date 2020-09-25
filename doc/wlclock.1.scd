@@ -45,6 +45,12 @@ but a desktop-widget.
 *--clock-face-size* <size>
 	The size of the minute markers on the clock face. The default is 1.
 
+*--corner-radius* <radius>, *--corner-radius* <top-left> <top-right> <bottom-right> <bottom-left>
+	The radius of the corners. Expects either one argument, to set the radius of
+	all corners, or four arguments, to set the individual corner radii. The
+	default radius is 5. If set to sufficiently high values, wlclock will be
+	completely round. Set to 0 to disable corner roundness.
+
 *--exclusive-zone* <true|false|stationary>
 	Exclusive zone of the surface. Can be "true", "false" or "stationary". If
 	"true", the compositor is informed that it should not obstruct the surface
@@ -55,6 +61,11 @@ but a desktop-widget.
 	freely place other surfaces over or under the surface of wlclock. The
 	default is "stationary". The exact implementation is compositor dependant;
 	A compositor may choose to ignore the requested exclusive zone of surfaces.
+
+*--hand-style* <xclock|lines>
+	Style of the clock hands. Can be "xclock", where wlclock draws xclock-esque
+	triangles, and "lines", where wlclock draws straight lines. The default is
+	"xclock".
 
 *--layer* <background|bottom|top|overlay>
 	Layer of the layer surface. Can be "overlay", "top", "bottom" or
@@ -76,23 +87,17 @@ but a desktop-widget.
 	input events; This will make mouse events pass through wlclock to windows
 	beneath it.
 
-*--snap*
-	If this flag is used, the hour hand will instantly snap to the next position
-	once the new hour begins, instead of slowly progressing over the hour.
-
 *--output* <output|all>
 	Name of the output on which wlclock should be displayed. Output names
 	are compositor dependant. If set to "all" or "\*", wlclock will be displayed
 	on all outputs, which is the default behaviour.
 
-*--corner-radius* <radius>, *--corner-radius* <top-left> <top-right> <bottom-right> <bottom-left>
-	The radius of the corners. Expects either one argument, to set the radius of
-	all corners, or four arguments, to set the individual corner radii. The
-	default radius is 5. If set to sufficiently high values, wlclock will be
-	completely round. Set to 0 to disable corner roundness.
-
 *--size* <size>
 	The size of the clock, without borders. The default size is 165.
+
+*--snap*
+	If this flag is used, the hour hand will instantly snap to the next position
+	once the new hour begins, instead of slowly progressing over the hour.
 
 
 # AUTHORS

@@ -10,6 +10,12 @@
 
 #include"colour.h"
 
+enum Hand_style
+{
+	STYLE_XCLOCK,
+	STYLE_LINES
+};
+
 struct Wlclock_dimensions
 {
 	/* Width and height of entire surface (size + borders). */
@@ -50,6 +56,7 @@ struct Wlclock
 	int32_t radius_top_left, radius_top_right, radius_bottom_left, radius_bottom_right;
 	int32_t anchor;
 	bool input, snap;
+	enum Hand_style hand_style;
 
 	struct Wlclock_colour background_colour;
 	struct Wlclock_colour border_colour;

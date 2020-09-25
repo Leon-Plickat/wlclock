@@ -191,7 +191,8 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		SNAP,
 		OUTPUT,
 		CORNER_RADIUS,
-		SIZE
+		SIZE,
+		HAND_STYLE
 	};
 
 	static struct option opts[] = {
@@ -213,7 +214,8 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		{"snap",              no_argument,       NULL, SNAP},
 		{"output",            required_argument, NULL, OUTPUT},
 		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
-		{"size",              required_argument, NULL, SIZE}
+		{"size",              required_argument, NULL, SIZE},
+		{"hand-style",        required_argument, NULL, HAND_STYLE}
 	};
 
 	const char *usage =
@@ -228,15 +230,16 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --border-size        Size of the border.\n"
 		"      --clock-colour       Colour of the clock elements.\n"
 		"      --clock-face-size    Size of clock face lines.\n"
+		"      --corner-radius      Corner radii.\n"
 		"      --exclusive-zone     Exclusive zone of the layer surface.\n"
+		"      --hand-style         Style of the clock hands.\n"
 		"      --layer              Layer of the layer surface.\n"
 		"      --margin             Directional margins.\n"
 		"      --namespace          Namespace of the layer surface.\n"
 		"      --no-input           Let inputs surface pass trough the layer surface.\n"
-		"      --snap               Let the hour hand snap to the next position instead of slowly progressing.\n"
 		"      --output             The output which the clock will be displayed.\n"
-		"      --corner-radius      Corner radii.\n"
 		"      --size               Size of the clock.\n"
+		"      --snap               Let the hour hand snap to the next position instead of slowly progressing.\n"
 		"\n";
 
 	int opt, args;
@@ -447,6 +450,20 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			}
 			break;
 
+		case HAND_STYLE:
+			if (! strcmp(optarg, "xclock"))
+				clock->hand_style = STYLE_XCLOCK;
+			else if (! strcmp(optarg, "lines"))
+				clock->hand_style = STYLE_LINES;
+			else
+			{
+				clocklog(NULL, 0, "ERROR: Unrecognized hand style \"%s\".\n"
+						"INFO: Possible hand styles are "
+						"'xclock' and 'lines'.\n", optarg);
+				return false;
+			}
+			break;
+
 		default:
 			return false;
 	}
@@ -590,6 +607,7 @@ int main (int argc, char *argv[])
 	clock.margin_bottom = clock.margin_top
 		= clock.margin_left = clock.margin_right = 0;
 	clock.clock_size = 1;
+	clock.hand_style = STYLE_XCLOCK;
 	colour_from_string(&clock.background_colour, "#FFFFFF");
 	colour_from_string(&clock.border_colour,     "#000000");
 	colour_from_string(&clock.clock_colour,      "#000000");
