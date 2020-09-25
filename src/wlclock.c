@@ -396,7 +396,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			break;
 
 		case OUTPUT:
-			set_string(&clock->output, optarg);
+			if ( ! strcmp("all", optarg) || ! strcmp("*", optarg) )
+				free_if_set(clock->output);
+			else
+				set_string(&clock->output, optarg);
 			break;
 
 		case CORNER_RADIUS:
