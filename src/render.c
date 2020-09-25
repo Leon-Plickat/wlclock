@@ -116,6 +116,9 @@ static void draw_background (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensions,
 		int32_t scale, struct Wlclock *clock)
 {
+	if ( clock->clock_size == 0 )
+		return;
+
 	double cx  = scale * (dimensions->center_x + (dimensions->center_size / 2));
 	double cy  = scale * (dimensions->center_y + (dimensions->center_size / 2));
 	double or  = scale * 0.9  * dimensions->center_size / 2;
@@ -134,7 +137,7 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 		else
 			cairo_line_to(cairo, cx + ir * cos(phi), cy + ir * sin(phi));
 	}
-	cairo_set_line_width(cairo, 1 * scale);
+	cairo_set_line_width(cairo, clock->clock_size * scale);
 	colour_set_cairo_source(cairo, &clock->clock_colour);
 	cairo_stroke(cairo);
 	cairo_restore(cairo);

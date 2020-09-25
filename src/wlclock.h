@@ -42,6 +42,7 @@ struct Wlclock
 	enum zwlr_layer_shell_v1_layer layer;
 	struct Wlclock_dimensions dimensions;
 	char *namespace;
+	int32_t clock_size;
 	int32_t exclusive_zone;
 	int32_t border_top, border_right, border_bottom, border_left;
 	int32_t margin_top, margin_right, margin_bottom, margin_left;

@@ -169,24 +169,43 @@ static int count_args (int index, int argc, char *argv[])
 
 static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 {
+	enum
+	{
+		ANCHOR,
+		BACKGROUND_COLOUR,
+		BORDER_COLOUR,
+		BORDER_SIZE,
+		CLOCK_COLOUR,
+		CLOCK_FACE_SIZE,
+		EXCLUSIVE_ZONE,
+		LAYER,
+		MARGIN,
+		NAMEPSACE,
+		NO_INPUT,
+		OUTPUT,
+		CORNER_RADIUS,
+		SIZE
+	};
+
 	static struct option opts[] = {
 		{"help",     no_argument,       NULL, 'h'},
 		{"verbose",  no_argument,       NULL, 'v'},
 		{"version",  no_argument,       NULL, 'V'},
 
-		{"anchor",            required_argument, NULL, 1100},
-		{"background-colour", required_argument, NULL, 1101},
-		{"border-colour",     required_argument, NULL, 1102},
-		{"border-size",       required_argument, NULL, 1103},
-		{"clock-colour",      required_argument, NULL, 1104},
-		{"exclusive-zone",    required_argument, NULL, 1105},
-		{"layer",             required_argument, NULL, 1106},
-		{"margin",            required_argument, NULL, 1107},
-		{"namespace",         required_argument, NULL, 1108},
-		{"no-input",          no_argument,       NULL, 1109},
-		{"output",            required_argument, NULL, 1110},
-		{"corner-radius",     required_argument, NULL, 1111},
-		{"size",              required_argument, NULL, 1112},
+		{"anchor",            required_argument, NULL, ANCHOR},
+		{"background-colour", required_argument, NULL, BACKGROUND_COLOUR},
+		{"border-colour",     required_argument, NULL, BORDER_COLOUR},
+		{"border-size",       required_argument, NULL, BORDER_SIZE},
+		{"clock-colour",      required_argument, NULL, CLOCK_COLOUR},
+		{"clock-face-size",   required_argument, NULL, CLOCK_FACE_SIZE},
+		{"exclusive-zone",    required_argument, NULL, EXCLUSIVE_ZONE},
+		{"layer",             required_argument, NULL, LAYER},
+		{"margin",            required_argument, NULL, MARGIN},
+		{"namespace",         required_argument, NULL, NAMEPSACE},
+		{"no-input",          no_argument,       NULL, NO_INPUT},
+		{"output",            required_argument, NULL, OUTPUT},
+		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
+		{"size",              required_argument, NULL, SIZE}
 	};
 
 	const char *usage =
@@ -200,6 +219,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --border-colour      Border colour.\n"
 		"      --border-size        Size of the border.\n"
 		"      --clock-colour       Colour of the clock elements.\n"
+		"      --clock-face-size    Size of clock face lines.\n"
 		"      --exclusive-zone     Exclusive zone of the layer surface.\n"
 		"      --layer              Layer of the layer surface.\n"
 		"      --margin             Directional margins.\n"
@@ -229,7 +249,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			clock->ret = EXIT_SUCCESS;
 			return false;
 
-		case 1100: /* Anchor */
+		case ANCHOR:
 			args = count_args(optind, argc, argv);
 			if ( args != 4 )
 			{
@@ -247,17 +267,17 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			optind += 3; /* Tell getopt() to skip three argv fields. */
 			break;
 
-		case 1101: /* Background colour */
+		case BACKGROUND_COLOUR:
 			if (! colour_from_string(&clock->background_colour, optarg))
 				return false;
 			break;
 
-		case 1102: /* Border colour */
+		case BORDER_COLOUR:
 			if (! colour_from_string(&clock->border_colour, optarg))
 				return false;
 			break;
 
-		case 1103: /* Border size */
+		case BORDER_SIZE:
 			args = count_args(optind, argc, argv);
 			if ( args == 1 )
 				clock->border_top = clock->border_right =
@@ -285,12 +305,21 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			}
 			break;
 
-		case 1104: /* Clock colour */
+		case CLOCK_COLOUR:
 			if (! colour_from_string(&clock->clock_colour, optarg))
 				return false;
 			break;
 
-		case 1105: /* Exclusive zone */
+		case CLOCK_FACE_SIZE:
+			clock->clock_size = atoi(optarg);
+			if ( clock->clock_size < 0 )
+			{
+				clocklog(NULL, 0, "ERROR: Size of clock face elements may not be smaller then 0.\n");
+				return false;
+			}
+			break;
+
+		case EXCLUSIVE_ZONE:
 			if (is_boolean_true(optarg))
 				clock->exclusive_zone = 1;
 			else if (is_boolean_false(optarg))
@@ -306,7 +335,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			}
 			break;
 
-		case 1106: /* Layer */
+		case LAYER:
 			if (! strcmp(optarg, "overlay"))
 				clock->layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
 			else if (! strcmp(optarg, "top"))
@@ -324,7 +353,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			}
 			break;
 
-		case 1107: /* Margins */
+		case MARGIN:
 			args = count_args(optind, argc, argv);
 			if ( args == 1 )
 				clock->margin_top = clock->margin_right =
@@ -352,19 +381,19 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			}
 			break;
 
-		case 1108: /* Namespace */
+		case NAMEPSACE:
 			set_string(&clock->namespace, optarg);
 			break;
 
-		case 1109: /* Input */
+		case NO_INPUT:
 			clock->input = false;
 			break;
 
-		case 1110: /* Output */
+		case OUTPUT:
 			set_string(&clock->output, optarg);
 			break;
 
-		case 1111: /* Corner radii */
+		case CORNER_RADIUS:
 			args = count_args(optind, argc, argv);
 			if ( args == 1 )
 				clock->radius_top_left = clock->radius_top_right =
@@ -392,7 +421,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			}
 			break;
 
-		case 1112: /* Size */
+		case SIZE:
 			clock->dimensions.center_size = atoi(optarg);
 			if ( clock->dimensions.center_size <= 10 )
 			{
@@ -543,6 +572,7 @@ int main (int argc, char *argv[])
 		= clock.radius_top_left = clock.radius_top_right = 0;
 	clock.margin_bottom = clock.margin_top
 		= clock.margin_left = clock.margin_right = 0;
+	clock.clock_size = 1;
 	colour_from_string(&clock.background_colour, "#FFFFFF");
 	colour_from_string(&clock.border_colour,     "#000000");
 	colour_from_string(&clock.clock_colour,      "#000000");
