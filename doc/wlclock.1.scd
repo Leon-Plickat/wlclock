@@ -72,9 +72,13 @@ but a desktop-widget.
 	surfaces differently based on their namespace. The default is "wlclock".
 
 *--no-input*
-	If this flag is provided, wlclock will ask the compositor to not send it
+	If this flag is used, wlclock will ask the compositor to not send it
 	input events; This will make mouse events pass through wlclock to windows
 	beneath it.
+
+*--snap*
+	If this flag is used, the hour hand will instantly snap to the next position
+	once the new hour begins, instead of slowly progressing over the hour.
 
 *--output* <output|all>
 	Name of the output on which wlclock should be displayed. Output names

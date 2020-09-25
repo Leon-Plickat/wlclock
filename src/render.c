@@ -142,28 +142,21 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 	cairo_restore(cairo);
 }
 
-static int hour_two_pseudo_min (int hour)
-{
-	if ( hour > 12 )
-		hour -= 12;
-	return hour * 5;
-}
-
 static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struct Wlclock *clock)
 {
 	double cxy = scale       * size / 2;
 	double mr  = scale * 0.6 * size / 2; /* Radii mimick xclock. */
 	double hr  = scale * 0.4 * size / 2;
 	double ir  = scale * 0.075 * size / 2;
-	double tip_phi, back_phi_1, back_phi_2, phi_step = 2 * PI / 60;
+	double tip_phi, back_phi_1, back_phi_2, phi_step_min = 2 * PI / 60, phi_step_h = 2 * PI / 12;
 	struct tm tm = *localtime(&clock->now);
 
 	cairo_save(cairo);
 
 	/* Minutes */
-	tip_phi    = phi_step * (tm.tm_min + 45);
-	back_phi_1 = phi_step * (tm.tm_min + 45 + 20);
-	back_phi_2 = phi_step * (tm.tm_min + 45 + 40);
+	tip_phi    = phi_step_min * (tm.tm_min + 45);
+	back_phi_1 = phi_step_min * (tm.tm_min + 45 + 20);
+	back_phi_2 = phi_step_min * (tm.tm_min + 45 + 40);
 	cairo_move_to(cairo, cxy + mr * cos(tip_phi),    cxy + mr * sin(tip_phi));
 	cairo_line_to(cairo, cxy + ir * cos(back_phi_1), cxy + ir * sin(back_phi_1));
 	cairo_line_to(cairo, cxy + ir * cos(back_phi_2), cxy + ir * sin(back_phi_2));
@@ -171,10 +164,16 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 
 	/* Hours */
 	// TODO optinally make hour hand progress between to hours intstead of instantly snapping
-	int pseudo_min = hour_two_pseudo_min(tm.tm_hour);
-	tip_phi    = phi_step * (pseudo_min + 45);
-	back_phi_1 = phi_step * (pseudo_min + 45 + 20);
-	back_phi_2 = phi_step * (pseudo_min + 45 + 40);
+	tip_phi    = phi_step_h * (tm.tm_hour + 9);
+	back_phi_1 = phi_step_h * (tm.tm_hour + 9 + 4);
+	back_phi_2 = phi_step_h * (tm.tm_hour + 9 + 8);
+	if (! clock->snap)
+	{
+		double prog_phi_step = phi_step_h / 60.0;
+		tip_phi    += tm.tm_min * prog_phi_step;
+		back_phi_1 += tm.tm_min * prog_phi_step;
+		back_phi_2 += tm.tm_min * prog_phi_step;
+	}
 	cairo_move_to(cairo, cxy + hr * cos(tip_phi),    cxy + hr * sin(tip_phi));
 	cairo_line_to(cairo, cxy + ir * cos(back_phi_1), cxy + ir * sin(back_phi_1));
 	cairo_line_to(cairo, cxy + ir * cos(back_phi_2), cxy + ir * sin(back_phi_2));

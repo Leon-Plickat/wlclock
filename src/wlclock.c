@@ -188,6 +188,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		MARGIN,
 		NAMEPSACE,
 		NO_INPUT,
+		SNAP,
 		OUTPUT,
 		CORNER_RADIUS,
 		SIZE
@@ -209,6 +210,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		{"margin",            required_argument, NULL, MARGIN},
 		{"namespace",         required_argument, NULL, NAMEPSACE},
 		{"no-input",          no_argument,       NULL, NO_INPUT},
+		{"snap",              no_argument,       NULL, SNAP},
 		{"output",            required_argument, NULL, OUTPUT},
 		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
 		{"size",              required_argument, NULL, SIZE}
@@ -230,7 +232,8 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --layer              Layer of the layer surface.\n"
 		"      --margin             Directional margins.\n"
 		"      --namespace          Namespace of the layer surface.\n"
-		"      --no-input           Make inputs surface pass trough the layer surface.\n"
+		"      --no-input           Let inputs surface pass trough the layer surface.\n"
+		"      --snap               Let the hour hand snap to the next position instead of slowly progressing.\n"
 		"      --output             The output which the clock will be displayed.\n"
 		"      --corner-radius      Corner radii.\n"
 		"      --size               Size of the clock.\n"
@@ -393,6 +396,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 
 		case NO_INPUT:
 			clock->input = false;
+			break;
+
+		case SNAP:
+			clock->snap = true;
 			break;
 
 		case OUTPUT:
@@ -572,6 +579,7 @@ int main (int argc, char *argv[])
 	clock.dimensions.center_size = 165; /* About the size of xclock, at least on my machine. */
 	clock.exclusive_zone = -1;
 	clock.input = true;
+	clock.snap = false;
 	clock.layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
 	clock.anchor = 0; /* Center */
 	set_string(&clock.namespace, "wlclock");

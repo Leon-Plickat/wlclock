@@ -49,7 +49,7 @@ struct Wlclock
 	int32_t margin_top, margin_right, margin_bottom, margin_left;
 	int32_t radius_top_left, radius_top_right, radius_bottom_left, radius_bottom_right;
 	int32_t anchor;
-	bool input;
+	bool input, snap;
 
 	struct Wlclock_colour background_colour;
 	struct Wlclock_colour border_colour;
