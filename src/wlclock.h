@@ -10,6 +10,17 @@
 
 #include"colour.h"
 
+struct Wlclock_dimensions
+{
+	/* Width and height of entire surface (size + borders). */
+	int32_t w, h;
+
+	/* Dimensions of center area (where the actual clock is).
+	 * Center is always square.
+	 */
+	int32_t center_x, center_y, center_size;
+};
+
 struct Wlclock
 {
 	struct wl_display             *display;
@@ -29,7 +40,7 @@ struct Wlclock
 	int  ret;
 
 	enum zwlr_layer_shell_v1_layer layer;
-	int32_t size;
+	struct Wlclock_dimensions dimensions;
 	char *namespace;
 	int32_t exclusive_zone;
 	int32_t border_top, border_right, border_bottom, border_left;

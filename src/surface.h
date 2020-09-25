@@ -4,6 +4,7 @@
 #include<wayland-server.h>
 
 #include"buffer.h"
+#include"wlclock.h"
 
 #include<stdint.h>
 #include<stdbool.h>
@@ -17,7 +18,7 @@ struct Wlclock_surface
 	struct wl_surface            *surface;
 	struct zwlr_layer_surface_v1 *layer_surface;
 
-	int32_t size;
+	struct Wlclock_dimensions dimensions;
 	struct Wlclock_buffer  buffers[2];
 	struct Wlclock_buffer *current_buffer;
 	bool configured;

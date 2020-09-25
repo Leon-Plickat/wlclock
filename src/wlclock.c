@@ -393,11 +393,11 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			break;
 
 		case 1112: /* Size */
-			clock->size = atoi(optarg);
-			if ( clock->size <= 10 )
+			clock->dimensions.center_size = atoi(optarg);
+			if ( clock->dimensions.center_size <= 10 )
 			{
 				clocklog(NULL, 0, "ERROR: Unreasonably small size \"%d\".\n",
-						clock->size);
+						clock->dimensions.center_size);
 				return false;
 			}
 			break;
@@ -530,7 +530,7 @@ int main (int argc, char *argv[])
 	clock.loop = true;
 	clock.verbosity = 0;
 
-	clock.size = 165; /* About the size of xclock, at least on my machine. */
+	clock.dimensions.center_size = 165; /* About the size of xclock, at least on my machine. */
 	clock.exclusive_zone = -1;
 	clock.input = true;
 	clock.layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
@@ -549,26 +549,19 @@ int main (int argc, char *argv[])
 	if (! handle_command_flags(&clock, argc, argv))
 		goto exit;
 
-	if ( clock.border_bottom > clock.size / 3
-			|| clock.border_top > clock.size / 3
-			|| clock.border_left > clock.size / 3
-			|| clock.border_right > clock.size / 3 )
-	{
-		clocklog(NULL, 0, "ERROR: Corner radii may not be larger than "
-				"half the clock size.\n");
-		goto exit;
-	}
-	if ( clock.radius_bottom_left > clock.size / 2
-			|| clock.radius_bottom_right > clock.size / 2
-			|| clock.radius_top_left > clock.size / 2
-			|| clock.radius_top_right > clock.size / 2 )
-	{
-		clocklog(NULL, 0, "ERROR: Corner radii may not be larger than "
-				"half the clock size.\n");
-		goto exit;
-	}
+	clock.dimensions.w = clock.dimensions.center_size
+		+ clock.border_left + clock.border_right;
+	clock.dimensions.h = clock.dimensions.center_size
+		+ clock.border_top + clock.border_bottom;
+	clock.dimensions.center_x = clock.border_left;
+	clock.dimensions.center_y = clock.border_top;
 
-	clocklog(&clock, 1, "[main] wlclock: version=%s\n", VERSION);
+
+	clocklog(&clock, 1, "[main] wlclock: version=%s\n"
+			"[main] Default dimensions: size=%d cx=%d cy=%d w=%d h=%d\n",
+			VERSION, clock.dimensions.center_size,
+			clock.dimensions.center_x, clock.dimensions.center_y,
+			clock.dimensions.w, clock.dimensions.h);
 
 	if (! init_wayland(&clock))
 		goto exit;

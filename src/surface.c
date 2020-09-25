@@ -20,22 +20,28 @@
 #include"buffer.h"
 #include"render.h"
 
-static uint32_t min (uint32_t a, uint32_t b)
-{
-	return a > b ? b : a;
-}
-
 static void layer_surface_handle_configure (void *data,
 		struct zwlr_layer_surface_v1 *layer_surface, uint32_t serial,
 		uint32_t w, uint32_t h)
 {
 	struct Wlclock_surface *surface = (struct Wlclock_surface *)data;
-	clocklog(surface->output->clock, 1,
-			"[surface] Layer surface configure request: global_name=%d w=%d h=%d serial=%d\n",
+	struct Wlclock         *clock   = surface->output->clock;
+	clocklog(clock, 1, "[surface] Layer surface configure request: global_name=%d w=%d h=%d serial=%d\n",
 			surface->output->global_name, w, h, serial);
 	zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
-	if ( w > 0 && h > 0 ) /* Try to fit as best as possible. */
-		surface->size = min(w, h);
+	if ( (w != (uint32_t)surface->dimensions.w || h != (uint32_t)surface->dimensions.h)
+			&& (w > 0 && h > 0) )
+	{
+		/* Try to fit into the space the compositor wants us to occupy
+		 * while also keeping the center square and not changing the
+		 * border sizes.
+		 */
+		int32_t size_a = (int32_t)w - clock->border_left - clock->border_right;
+		int32_t size_b = (int32_t)h - clock->border_top  - clock->border_bottom;
+		surface->dimensions.center_size = size_a < size_b ? size_a : size_b;
+		if ( surface->dimensions.center_size < 10 )
+			surface->dimensions.center_size = 10;
+	}
 	surface->configured = true;
 	update_surface(surface);
 }
@@ -56,9 +62,38 @@ const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 
 static int32_t get_exclusive_zone (struct Wlclock_surface *surface)
 {
-	if ( surface->output->clock->exclusive_zone == 1 )
-		return surface->size;
-	return surface->output->clock->exclusive_zone;
+	struct Wlclock *clock = surface->output->clock;
+	if ( clock->exclusive_zone == 1 ) switch (clock->anchor)
+	{
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+			return surface->dimensions.h;
+
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM:
+		case ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+			| ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM:
+			return surface->dimensions.w;
+
+		default:
+			return 0;
+	}
+	else
+		return surface->output->clock->exclusive_zone;
 }
 
 static void configure_layer_surface (struct Wlclock_surface *surface)
@@ -67,7 +102,7 @@ static void configure_layer_surface (struct Wlclock_surface *surface)
 	clocklog(clock, 1, "[surface] Configuring surface: global_name=%d\n",
 			surface->output->global_name);
 	zwlr_layer_surface_v1_set_size(surface->layer_surface,
-			surface->size, surface->size);
+			surface->dimensions.w, surface->dimensions.h);
 	zwlr_layer_surface_v1_set_anchor(surface->layer_surface, clock->anchor);
 	zwlr_layer_surface_v1_set_margin(surface->layer_surface,
 			clock->margin_top, clock->margin_right,
@@ -95,7 +130,7 @@ bool create_surface (struct Wlclock_output *output)
 	}
 
 	output->surface        = surface;
-	surface->size          = clock->size;
+	surface->dimensions    = clock->dimensions;
 	surface->output        = output;
 	surface->surface       = NULL;
 	surface->layer_surface = NULL;
