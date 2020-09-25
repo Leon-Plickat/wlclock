@@ -116,11 +116,11 @@ static void draw_background (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensions,
 		int32_t scale, struct Wlclock *clock)
 {
-	double cx  = dimensions->center_x + (dimensions->center_size / 2);
-	double cy  = dimensions->center_y + (dimensions->center_size / 2);
-	double or  = 0.9  * (double)(dimensions->center_size / 2);
-	double ir  = 0.85 * (double)(dimensions->center_size / 2);
-	double bir = 0.8  * (double)(dimensions->center_size / 2);
+	double cx  = scale * (dimensions->center_x + (dimensions->center_size / 2));
+	double cy  = scale * (dimensions->center_y + (dimensions->center_size / 2));
+	double or  = scale * 0.9  * dimensions->center_size / 2;
+	double ir  = scale * 0.85 * dimensions->center_size / 2;
+	double bir = scale * 0.8  * dimensions->center_size / 2;
 	double phi;
 	double phi_step = 2 * PI / 60;
 
