@@ -48,6 +48,16 @@ static void draw_background (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 	int32_t radius_bottom_left  = scale * clock->radius_bottom_left;
 	int32_t radius_bottom_right = scale * clock->radius_bottom_right;
 
+	/* Avoid too radii so big that they cause unexpected drawing behaviour. */
+	if ( radius_top_left > center_size / 2 )
+		radius_top_left = center_size / 2;
+	if ( radius_top_right > center_size / 2 )
+		radius_top_right = center_size / 2;
+	if ( radius_bottom_left > center_size / 2 )
+		radius_bottom_left = center_size / 2;
+	if ( radius_bottom_right > center_size / 2 )
+		radius_bottom_right = center_size / 2;
+
 	clocklog(clock, 2, "[render] Render dimensions: size=%d cx=%d cy=%d w=%d h=%d\n",
 			center_size, center_x, center_y, w, h);
 
@@ -124,7 +134,7 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 		else
 			cairo_line_to(cairo, cx + ir * cos(phi), cy + ir * sin(phi));
 	}
-	cairo_set_line_width(cairo, 1);
+	cairo_set_line_width(cairo, 1 * scale);
 	colour_set_cairo_source(cairo, &clock->clock_colour);
 	cairo_stroke(cairo);
 	cairo_restore(cairo);
