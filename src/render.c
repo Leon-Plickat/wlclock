@@ -121,11 +121,10 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 
 	double cx  = scale * (dimensions->center_x + (dimensions->center_size / 2));
 	double cy  = scale * (dimensions->center_y + (dimensions->center_size / 2));
-	double or  = scale * 0.9  * dimensions->center_size / 2;
+	double or  = scale * 0.9  * dimensions->center_size / 2; /* Radii mimick xclock. */
 	double ir  = scale * 0.85 * dimensions->center_size / 2;
 	double bir = scale * 0.8  * dimensions->center_size / 2;
-	double phi;
-	double phi_step = 2 * PI / 60;
+	double phi, phi_step = 2 * PI / 60;
 
 	cairo_save(cairo);
 	for (int i = 0; i < 60; i++)
@@ -143,6 +142,51 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 	cairo_restore(cairo);
 }
 
+static int hour_two_pseudo_min (int hour)
+{
+	if ( hour > 12 )
+		hour -= 12;
+	return hour * 5;
+}
+
+static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struct Wlclock *clock)
+{
+	double cxy = scale       * size / 2;
+	double mr  = scale * 0.6 * size / 2; /* Radii mimick xclock. */
+	double hr  = scale * 0.4 * size / 2;
+	double ir  = scale * 0.075 * size / 2;
+	double tip_phi, back_phi_1, back_phi_2, phi_step = 2 * PI / 60;
+	struct tm tm = *localtime(&clock->now);
+
+	cairo_save(cairo);
+
+	/* Minutes */
+	tip_phi    = phi_step * (tm.tm_min + 45);
+	back_phi_1 = phi_step * (tm.tm_min + 45 + 20);
+	back_phi_2 = phi_step * (tm.tm_min + 45 + 40);
+	cairo_move_to(cairo, cxy + mr * cos(tip_phi),    cxy + mr * sin(tip_phi));
+	cairo_line_to(cairo, cxy + ir * cos(back_phi_1), cxy + ir * sin(back_phi_1));
+	cairo_line_to(cairo, cxy + ir * cos(back_phi_2), cxy + ir * sin(back_phi_2));
+	cairo_line_to(cairo, cxy + mr * cos(tip_phi),    cxy + mr * sin(tip_phi));
+
+	/* Hours */
+	// TODO optinally make hour hand progress between to hours intstead of instantly snapping
+	int pseudo_min = hour_two_pseudo_min(tm.tm_hour);
+	tip_phi    = phi_step * (pseudo_min + 45);
+	back_phi_1 = phi_step * (pseudo_min + 45 + 20);
+	back_phi_2 = phi_step * (pseudo_min + 45 + 40);
+	cairo_move_to(cairo, cxy + hr * cos(tip_phi),    cxy + hr * sin(tip_phi));
+	cairo_line_to(cairo, cxy + ir * cos(back_phi_1), cxy + ir * sin(back_phi_1));
+	cairo_line_to(cairo, cxy + ir * cos(back_phi_2), cxy + ir * sin(back_phi_2));
+	cairo_line_to(cairo, cxy + hr * cos(tip_phi),    cxy + hr * sin(tip_phi));
+
+	cairo_close_path(cairo);
+	colour_set_cairo_source(cairo, &clock->clock_colour);
+	cairo_fill(cairo);
+
+	cairo_restore(cairo);
+}
+
 static void clear_buffer (cairo_t *cairo)
 {
 	cairo_save(cairo);
@@ -151,29 +195,54 @@ static void clear_buffer (cairo_t *cairo)
 	cairo_restore(cairo);
 }
 
-void render_surface_frame (struct Wlclock_surface *surface)
+void render_background_frame (struct Wlclock_surface *surface)
 {
 	struct Wlclock_output *output = surface->output;
 	struct Wlclock        *clock  = output->clock;
 	uint32_t               scale  = output->scale;
-	clocklog(clock, 2, "[render] Render frame: global_name=%d\n", output->global_name);
+	clocklog(clock, 2, "[render] Render background frame: global_name=%d\n",
+			output->global_name);
 
 	/* Get new/next buffer. */
-	if (! next_buffer(&surface->current_buffer, clock->shm, surface->buffers,
+	if (! next_buffer(&surface->current_background_buffer, clock->shm,
+				surface->background_buffers,
 				surface->dimensions.w * scale,
 				surface->dimensions.h * scale))
 		return;
 
-	cairo_t *cairo = surface->current_buffer->cairo;
+	cairo_t *cairo = surface->current_background_buffer->cairo;
 	clear_buffer(cairo);
 
 	draw_background(cairo, &surface->dimensions, scale, clock);
 	draw_clock_face(cairo, &surface->dimensions, scale, clock);
 
-	// TODO draw clock hands to subsurface
+	wl_surface_set_buffer_scale(surface->background_surface, scale);
+	wl_surface_attach(surface->background_surface, surface->current_background_buffer->buffer, 0, 0);
+	wl_surface_damage_buffer(surface->background_surface, 0, 0, INT32_MAX, INT32_MAX);
+}
 
-	wl_surface_set_buffer_scale(surface->surface, scale);
-	wl_surface_attach(surface->surface, surface->current_buffer->buffer, 0, 0);
-	wl_surface_damage_buffer(surface->surface, 0, 0, INT32_MAX, INT32_MAX);
+void render_hands_frame (struct Wlclock_surface *surface)
+{
+	struct Wlclock_output *output = surface->output;
+	struct Wlclock        *clock  = output->clock;
+	uint32_t               scale  = output->scale;
+	clocklog(clock, 2, "[render] Render hands frame: global_name=%d\n",
+			output->global_name);
+
+	/* Get new/next buffer. */
+	if (! next_buffer(&surface->current_hands_buffer, clock->shm,
+				surface->hands_buffers,
+				surface->dimensions.center_size * scale,
+				surface->dimensions.center_size * scale))
+		return;
+
+	cairo_t *cairo = surface->current_hands_buffer->cairo;
+	clear_buffer(cairo);
+
+	draw_clock_hands(cairo, surface->dimensions.center_size, scale, clock);
+
+	wl_surface_set_buffer_scale(surface->hands_surface, scale);
+	wl_surface_attach(surface->hands_surface, surface->current_hands_buffer->buffer, 0, 0);
+	wl_surface_damage_buffer(surface->hands_surface, 0, 0, INT32_MAX, INT32_MAX);
 }
 

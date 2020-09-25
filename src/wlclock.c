@@ -33,6 +33,12 @@ static void registry_handle_global (void *data, struct wl_registry *registry,
 		clocklog(clock, 2, "[main] Get wl_compositor.\n");
 		clock->compositor = wl_registry_bind(registry, name, &wl_compositor_interface, 4);
 	}
+	if (! strcmp(interface, wl_subcompositor_interface.name))
+	{
+		clocklog(clock, 2, "[main] Get wl_subcompositor.\n");
+		clock->subcompositor = wl_registry_bind(registry, name,
+				&wl_subcompositor_interface, 1);
+	}
 	else if (! strcmp(interface, wl_shm_interface.name))
 	{
 		clocklog(clock, 2, "[main] Get wl_shm.\n");
@@ -500,7 +506,7 @@ static void clock_run (struct Wlclock *clock)
 		if ( ret == 0 )
 		{
 			clock->now = time(NULL);
-			// TODO update clock hands
+			update_all_hands(clock);
 			continue;
 		}
 		else if ( ret < 0 )

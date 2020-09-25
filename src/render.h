@@ -3,6 +3,7 @@
 
 struct Wlclock_surface;
 
-void render_surface_frame (struct Wlclock_surface *surface);
+void render_background_frame (struct Wlclock_surface *surface);
+void render_hands_frame (struct Wlclock_surface *surface);
 
 #endif

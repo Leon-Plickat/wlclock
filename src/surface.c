@@ -96,10 +96,21 @@ static int32_t get_exclusive_zone (struct Wlclock_surface *surface)
 		return surface->output->clock->exclusive_zone;
 }
 
+static void configure_subsurface (struct Wlclock_surface *surface)
+{
+	clocklog(surface->output->clock, 1, "[surface] Configuring sub surface: global_name=%d\n",
+			surface->output->global_name);
+	wl_subsurface_set_position(surface->subsurface,
+			surface->dimensions.center_x, surface->dimensions.center_y);
+	struct wl_region *region = wl_compositor_create_region(surface->output->clock->compositor);
+	wl_surface_set_input_region(surface->hands_surface, region);
+	wl_region_destroy(region);
+}
+
 static void configure_layer_surface (struct Wlclock_surface *surface)
 {
 	struct Wlclock *clock = surface->output->clock;
-	clocklog(clock, 1, "[surface] Configuring surface: global_name=%d\n",
+	clocklog(clock, 1, "[surface] Configuring layer surface: global_name=%d\n",
 			surface->output->global_name);
 	zwlr_layer_surface_v1_set_size(surface->layer_surface,
 			surface->dimensions.w, surface->dimensions.h);
@@ -112,7 +123,7 @@ static void configure_layer_surface (struct Wlclock_surface *surface)
 	if (! clock->input)
 	{
 		struct wl_region *region = wl_compositor_create_region(clock->compositor);
-		wl_surface_set_input_region(surface->surface, region);
+		wl_surface_set_input_region(surface->background_surface, region);
 		wl_region_destroy(region);
 	}
 }
@@ -129,20 +140,21 @@ bool create_surface (struct Wlclock_output *output)
 		return false;
 	}
 
-	output->surface        = surface;
-	surface->dimensions    = clock->dimensions;
-	surface->output        = output;
-	surface->surface       = NULL;
-	surface->layer_surface = NULL;
-	surface->configured    = false;
+	output->surface             = surface;
+	surface->dimensions         = clock->dimensions;
+	surface->output             = output;
+	surface->background_surface = NULL;
+	surface->hands_surface      = NULL;
+	surface->layer_surface      = NULL;
+	surface->configured         = false;
 
-	if ( NULL == (surface->surface = wl_compositor_create_surface(clock->compositor)) )
+	if ( NULL == (surface->background_surface = wl_compositor_create_surface(clock->compositor)) )
 	{
-		clocklog(NULL, 0, "ERROR: Compositor did not create wl_surface.\n");
+		clocklog(NULL, 0, "ERROR: Compositor did not create wl_surface (background).\n");
 		return false;
 	}
 	if ( NULL == (surface->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-					clock->layer_shell, surface->surface,
+					clock->layer_shell, surface->background_surface,
 					output->wl_output, clock->layer,
 					clock->namespace)) )
 	{
@@ -150,10 +162,25 @@ bool create_surface (struct Wlclock_output *output)
 		return false;
 	}
 
+	if ( NULL == (surface->hands_surface = wl_compositor_create_surface(clock->compositor)) )
+	{
+		clocklog(NULL, 0, "ERROR: Compositor did not create wl_surface (hands).\n");
+		return false;
+	}
+	if ( NULL == (surface->subsurface = wl_subcompositor_get_subsurface(
+					clock->subcompositor, surface->hands_surface,
+					surface->background_surface)) )
+	{
+		clocklog(NULL, 0, "ERROR: Compositor did not create wl_subsurface.\n");
+		return false;
+	}
+
 	configure_layer_surface(surface);
+	configure_subsurface(surface);
 	zwlr_layer_surface_v1_add_listener(surface->layer_surface,
 			&layer_surface_listener, surface);
-	wl_surface_commit(surface->surface);
+	wl_surface_commit(surface->background_surface);
+	wl_surface_commit(surface->hands_surface);
 
 	return true;
 }
@@ -164,10 +191,16 @@ void destroy_surface (struct Wlclock_surface *surface)
 		return;
 	if ( surface->layer_surface != NULL )
 		zwlr_layer_surface_v1_destroy(surface->layer_surface);
-	if ( surface->surface != NULL )
-		wl_surface_destroy(surface->surface);
-	finish_buffer(&surface->buffers[0]);
-	finish_buffer(&surface->buffers[1]);
+	if ( surface->subsurface != NULL )
+		wl_subsurface_destroy(surface->subsurface);
+	if ( surface->background_surface != NULL )
+		wl_surface_destroy(surface->background_surface);
+	if ( surface->hands_surface != NULL )
+		wl_surface_destroy(surface->hands_surface);
+	finish_buffer(&surface->background_buffers[0]);
+	finish_buffer(&surface->background_buffers[1]);
+	finish_buffer(&surface->hands_buffers[0]);
+	finish_buffer(&surface->hands_buffers[1]);
 	free(surface);
 }
 
@@ -185,8 +218,11 @@ void update_surface (struct Wlclock_surface *surface)
 	if ( surface == NULL || ! surface->configured )
 		return;
 	configure_layer_surface(surface);
-	render_surface_frame(surface);
-	wl_surface_commit(surface->surface);
+	configure_subsurface(surface);
+	render_background_frame(surface);
+	render_hands_frame(surface);
+	wl_surface_commit(surface->background_surface);
+	wl_surface_commit(surface->hands_surface);
 }
 
 void update_all_surfaces (struct Wlclock *clock)
@@ -197,3 +233,17 @@ void update_all_surfaces (struct Wlclock *clock)
 		if ( op->surface != NULL )
 			update_surface(op->surface);
 }
+
+void update_all_hands (struct Wlclock *clock)
+{
+	clocklog(clock, 1, "[surface] Updating all hands.\n");
+	struct Wlclock_output *op, *tmp;
+	wl_list_for_each_safe(op, tmp, &clock->outputs, link)
+		if ( op->surface != NULL )
+		{
+			render_hands_frame(op->surface);
+			wl_surface_commit(op->surface->hands_surface);
+			wl_surface_commit(op->surface->background_surface);
+		}
+}
+

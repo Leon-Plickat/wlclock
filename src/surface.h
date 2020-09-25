@@ -15,12 +15,16 @@ struct Wlclock_output;
 struct Wlclock_surface
 {
 	struct Wlclock_output        *output;
-	struct wl_surface            *surface;
+	struct wl_surface            *background_surface;
+	struct wl_surface            *hands_surface;
+	struct wl_subsurface         *subsurface;
 	struct zwlr_layer_surface_v1 *layer_surface;
 
 	struct Wlclock_dimensions dimensions;
-	struct Wlclock_buffer  buffers[2];
-	struct Wlclock_buffer *current_buffer;
+	struct Wlclock_buffer  background_buffers[2];
+	struct Wlclock_buffer *current_background_buffer;
+	struct Wlclock_buffer  hands_buffers[2];
+	struct Wlclock_buffer *current_hands_buffer;
 	bool configured;
 };
 
@@ -29,5 +33,6 @@ void destroy_surface (struct Wlclock_surface *surface);
 void destroy_all_surfaces (struct Wlclock *clock);
 void update_surface (struct Wlclock_surface *surface);
 void update_all_surfaces (struct Wlclock *clock);
+void update_all_hands (struct Wlclock *clock);
 
 #endif
