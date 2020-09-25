@@ -6,11 +6,8 @@
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
-
-#if HANDLE_SIGNALS
 #include<sys/signalfd.h>
 #include<signal.h>
-#endif
 
 #include<wayland-server.h>
 #include<wayland-client.h>
@@ -135,6 +132,9 @@ static bool init_wayland (struct Wlclock *clock)
 /* Finish him! */
 static void finish_wayland (struct Wlclock *clock)
 {
+	if ( clock->display == NULL )
+		return;
+
 	clocklog(clock, 1, "[main] Finish Wayland.\n");
 
 	destroy_all_outputs(clock);
@@ -149,11 +149,22 @@ static void finish_wayland (struct Wlclock *clock)
 	if ( clock->registry != NULL )
 		wl_registry_destroy(clock->registry);
 
-	if ( clock->display != NULL )
+	clocklog(clock, 2, "[main] Diconnecting from server.\n");
+	wl_display_disconnect(clock->display);
+}
+
+static int count_args (int index, int argc, char *argv[])
+{
+	index--;
+	int args = 0;
+	while ( index < argc )
 	{
-		clocklog(clock, 2, "[main] Diconnecting from server.\n");
-		wl_display_disconnect(clock->display);
+		if ( *argv[index] == '-' )
+			break;
+		args++;
+		index++;
 	}
+	return args;
 }
 
 static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
@@ -199,7 +210,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --size               Size of the clock.\n"
 		"\n";
 
-	int opt;
+	int opt, args;
 	extern int optind;
 	extern char *optarg;
 	while ( (opt = getopt_long(argc, argv, "hvV", opts, &optind)) != -1 ) switch (opt)
@@ -218,31 +229,127 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			clock->ret = EXIT_SUCCESS;
 			return false;
 
-		case 1100: // TODO anchor
+		case 1100: /* Anchor */
+			args = count_args(optind, argc, argv);
+			if ( args != 4 )
+			{
+				clocklog(NULL, 0, "ERROR: Anchor configuration requires four arguments.\n");
+				return false;
+			}
+			if (is_boolean_true(argv[optind-1]))
+				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+			if (is_boolean_true(argv[optind]))
+				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+			if (is_boolean_true(argv[optind+1]))
+				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+			if (is_boolean_true(argv[optind+2]))
+				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+			optind += 3; /* Tell getopt() to skip three argv fields. */
 			break;
 
 		case 1101: /* Background colour */
-			colour_from_string(&clock->background_colour, optarg);
+			if (! colour_from_string(&clock->background_colour, optarg))
+				return false;
 			break;
 
 		case 1102: /* Border colour */
-			colour_from_string(&clock->border_colour, optarg);
+			if (! colour_from_string(&clock->border_colour, optarg))
+				return false;
 			break;
 
-		case 1103: // TODO border size
+		case 1103: /* Border size */
+			args = count_args(optind, argc, argv);
+			if ( args == 1 )
+				clock->border_top = clock->border_right =
+					clock->border_bottom = clock->border_left =
+					atoi(optarg);
+			else if ( args == 4 )
+			{
+				clock->border_top    = atoi(argv[optind-1]);
+				clock->border_right  = atoi(argv[optind]);
+				clock->border_bottom = atoi(argv[optind+1]);
+				clock->border_left   = atoi(argv[optind+2]);
+				optind += 3; /* Tell getopt() to skip three argv fields. */
+			}
+			else
+			{
+				clocklog(NULL, 0, "ERROR: Border configuration "
+						"requires one or four arguments.\n");
+				return false;
+			}
+			if ( clock->border_top < 0 || clock->border_right < 0
+					|| clock->border_bottom < 0 || clock->border_left < 0 )
+			{
+				clocklog(NULL, 0, "ERROR: Borders may not be smaller than zero.\n");
+				return false;
+			}
 			break;
 
 		case 1104: /* Clock colour */
-			colour_from_string(&clock->clock_colour, optarg);
+			if (! colour_from_string(&clock->clock_colour, optarg))
+				return false;
 			break;
 
-		case 1105: // TODO exclusive zone
+		case 1105: /* Exclusive zone */
+			if (is_boolean_true(optarg))
+				clock->exclusive_zone = 1;
+			else if (is_boolean_false(optarg))
+				clock->exclusive_zone = 0;
+			else if (! strcmp(optarg, "stationary"))
+				clock->exclusive_zone = -1;
+			else
+			{
+				clocklog(NULL, 0, "ERROR: Unrecognized exclusive zone option \"%s\".\n"
+						"INFO: Possible options are 'true', "
+						"'false' and 'stationary'.\n", optarg);
+				return false;
+			}
 			break;
 
-		case 1106: // TODO layer
+		case 1106: /* Layer */
+			if (! strcmp(optarg, "overlay"))
+				clock->layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+			else if (! strcmp(optarg, "top"))
+				clock->layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+			else if (! strcmp(optarg, "bottom"))
+				clock->layer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
+			else if (! strcmp(optarg, "background"))
+				clock->layer = ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND;
+			else
+			{
+				clocklog(NULL, 0, "ERROR: Unrecognized layer \"%s\".\n"
+						"INFO: Possible layers are 'overlay', "
+						"'top', 'bottom', and 'background'.\n", optarg);
+				return false;
+			}
 			break;
 
-		case 1107: // TODO margins
+		case 1107: /* Margins */
+			args = count_args(optind, argc, argv);
+			if ( args == 1 )
+				clock->margin_top = clock->margin_right =
+					clock->margin_bottom = clock->margin_left =
+					atoi(optarg);
+			else if ( args == 4 )
+			{
+				clock->margin_top    = atoi(argv[optind-1]);
+				clock->margin_right  = atoi(argv[optind]);
+				clock->margin_bottom = atoi(argv[optind+1]);
+				clock->margin_left   = atoi(argv[optind+2]);
+				optind += 3; /* Tell getopt() to skip three argv fields. */
+			}
+			else
+			{
+				clocklog(NULL, 0, "ERROR: Margin configuration "
+						"requires one or four arguments.\n");
+				return false;
+			}
+			if ( clock->margin_top < 0 || clock->margin_right < 0
+					|| clock->margin_bottom < 0 || clock->margin_left < 0 )
+			{
+				clocklog(NULL, 0, "ERROR: Margins may not be smaller than zero.\n");
+				return false;
+			}
 			break;
 
 		case 1108: /* Namespace */
@@ -257,10 +364,42 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			set_string(&clock->output, optarg);
 			break;
 
-		case 1111: // TODO corner radii
+		case 1111: /* Corner radii */
+			args = count_args(optind, argc, argv);
+			if ( args == 1 )
+				clock->radius_top_left = clock->radius_top_right =
+					clock->radius_bottom_right = clock->radius_bottom_left =
+					atoi(optarg);
+			else if ( args == 4 )
+			{
+				clock->radius_top_left     = atoi(argv[optind-1]);
+				clock->radius_top_right    = atoi(argv[optind]);
+				clock->radius_bottom_right = atoi(argv[optind+1]);
+				clock->radius_bottom_left  = atoi(argv[optind+2]);
+				optind += 3; /* Tell getopt() to skip three argv fields. */
+			}
+			else
+			{
+				clocklog(NULL, 0, "ERROR: Radius configuration "
+						"requires one or four arguments.\n");
+				return false;
+			}
+			if ( clock->radius_top_left < 0 || clock->radius_top_right < 0
+					|| clock->radius_bottom_right < 0 || clock->radius_bottom_left < 0 )
+			{
+				clocklog(NULL, 0, "ERROR: Radii may not be smaller than zero.\n");
+				return false;
+			}
 			break;
 
-		case 1112: // TODO size
+		case 1112: /* Size */
+			clock->size = atoi(optarg);
+			if ( clock->size <= 10 )
+			{
+				clocklog(NULL, 0, "ERROR: Unreasonably small size \"%d\".\n",
+						clock->size);
+				return false;
+			}
 			break;
 
 		default:
@@ -272,18 +411,46 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 
 static time_t get_timeout (time_t now)
 {
+	/* Timeout until the next minute. */
 	return ((now / 60 * 60 ) + 60 - now) * 1000;
 }
 
 static void clock_run (struct Wlclock *clock)
 {
 	clocklog(clock, 1, "[main] Starting loop.\n");
-
 	clock->ret = EXIT_SUCCESS;
 
-	struct pollfd fds[] = {
-		{ .fd = wl_display_get_fd(clock->display), .events = POLLIN }
-	};
+	struct pollfd fds[2] = { 0 };
+	size_t wayland_fd = 0;
+	size_t signal_fd = 1;
+
+	fds[wayland_fd].events = POLLIN;
+	if ( -1 ==  (fds[wayland_fd].fd = wl_display_get_fd(clock->display)) )
+	{
+		clocklog(NULL, 0, "ERROR: Unable to open Wayland display fd.\n");
+		goto error;
+	}
+
+	sigset_t mask;
+	struct signalfd_siginfo fdsi;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGTERM);
+	sigaddset(&mask, SIGQUIT);
+	sigaddset(&mask, SIGUSR1);
+	sigaddset(&mask, SIGUSR2);
+	if ( sigprocmask(SIG_BLOCK, &mask, NULL) == -1 )
+	{
+		clocklog(NULL, 0, "ERROR: sigprocmask() failed.\n");
+		goto error;
+	}
+	fds[signal_fd].events = POLLIN;
+	if ( -1 ==  (fds[signal_fd].fd = signalfd(-1, &mask, 0)) )
+	{
+		clocklog(NULL, 0, "ERROR: Unable to open signal fd.\n"
+				"ERROR: signalfd: %s\n", strerror(errno));
+		goto error;
+	}
 
 	while (clock->loop)
 	{
@@ -299,59 +466,107 @@ static void clock_run (struct Wlclock *clock)
 		} while ( errno == EAGAIN );
 
 		clock->now = time(NULL);
-		errno = 0;
-		int ret = poll(fds, 1, get_timeout(clock->now));
+		int ret = poll(fds, 2, get_timeout(clock->now));
 
 		if ( ret == 0 )
-			update_all_surfaces(clock);
-		else if ( ret > 0 )
 		{
-			if ( fds[0].revents & POLLIN && wl_display_dispatch(clock->display) == -1 )
-			{
-				clocklog(NULL, 0, "ERROR: wl_display_flush: %s\n", strerror(errno));
-				goto error;
-			}
-			if ( fds[0].revents & POLLOUT && wl_display_flush(clock->display) == -1 )
-			{
-				clocklog(NULL, 0, "ERROR: wl_display_flush: %s\n", strerror(errno));
-				goto error;
-			}
+			update_all_surfaces(clock);
+			continue;
 		}
-		else
+		else if ( ret < 0 )
+		{
 			clocklog(NULL, 0, "ERROR: poll: %s\n", strerror(errno));
+			continue;
+		}
+	
+		/* Wayland events */
+		if ( fds[wayland_fd].revents & POLLIN && wl_display_dispatch(clock->display) == -1 )
+		{
+			clocklog(NULL, 0, "ERROR: wl_display_flush: %s\n", strerror(errno));
+			goto error;
+		}
+		if ( fds[wayland_fd].revents & POLLOUT && wl_display_flush(clock->display) == -1 )
+		{
+			clocklog(NULL, 0, "ERROR: wl_display_flush: %s\n", strerror(errno));
+			goto error;
+		}
+
+		/* Signal events. */
+		if ( fds[signal_fd].revents & POLLIN )
+		{
+			if ( read(fds[signal_fd].fd, &fdsi, sizeof(struct signalfd_siginfo))
+					!= sizeof(struct signalfd_siginfo) )
+			{
+				clocklog(NULL, 0, "ERROR: Can not read signal info.\n");
+				goto error;
+			}
+
+			if ( fdsi.ssi_signo == SIGINT || fdsi.ssi_signo == SIGQUIT || fdsi.ssi_signo == SIGTERM )
+			{
+				clocklog(clock, 1, "[main] Received SIGINT, SIGQUIT or SIGTERM; Exiting.\n");
+				goto exit;
+			}
+			else if ( fdsi.ssi_signo == SIGUSR1 || fdsi.ssi_signo == SIGUSR2 )
+				clocklog(clock, 1, "[main] Received SIGUSR; Ignoring.\n");
+		}
 	}
 
 	return;
 error:
 	clock->ret = EXIT_FAILURE;
+exit:
+	if ( fds[wayland_fd].fd != -1 )
+		close(fds[wayland_fd].fd);
+	if ( fds[signal_fd].fd != -1 )
+		close(fds[signal_fd].fd);
 	return;
 }
 
 int main (int argc, char *argv[])
 {
 	struct Wlclock clock = { 0 };
+	wl_list_init(&clock.outputs);
 	clock.ret = EXIT_FAILURE;
 	clock.loop = true;
 	clock.verbosity = 0;
-	clock.size = 100;
-	clock.exclusive_zone = 1;
+
+	clock.size = 165; /* About the size of xclock, at least on my machine. */
+	clock.exclusive_zone = -1;
 	clock.input = true;
-	clock.layer = ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM;
-	clock.anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+	clock.layer = ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY;
+	clock.anchor = 0; /* Center */
 	set_string(&clock.namespace, "wlclock");
-	wl_list_init(&clock.outputs);
 	clock.border_bottom = clock.border_top
 		= clock.border_left = clock.border_right = 1;
 	clock.radius_bottom_left = clock.radius_bottom_right
-		= clock.radius_top_left = clock.radius_top_right = 5;
+		= clock.radius_top_left = clock.radius_top_right = 0;
 	clock.margin_bottom = clock.margin_top
 		= clock.margin_left = clock.margin_right = 0;
-	colour_from_string(&clock.background_colour, "#000000");
-	colour_from_string(&clock.border_colour,     "#FFFFFF");
-	colour_from_string(&clock.clock_colour,      "#FFFFFF");
+	colour_from_string(&clock.background_colour, "#FFFFFF");
+	colour_from_string(&clock.border_colour,     "#000000");
+	colour_from_string(&clock.clock_colour,      "#000000");
 
 	if (! handle_command_flags(&clock, argc, argv))
-		return clock.ret;
+		goto exit;
+
+	if ( clock.border_bottom > clock.size / 3
+			|| clock.border_top > clock.size / 3
+			|| clock.border_left > clock.size / 3
+			|| clock.border_right > clock.size / 3 )
+	{
+		clocklog(NULL, 0, "ERROR: Corner radii may not be larger than "
+				"half the clock size.\n");
+		goto exit;
+	}
+	if ( clock.radius_bottom_left > clock.size / 2
+			|| clock.radius_bottom_right > clock.size / 2
+			|| clock.radius_top_left > clock.size / 2
+			|| clock.radius_top_right > clock.size / 2 )
+	{
+		clocklog(NULL, 0, "ERROR: Corner radii may not be larger than "
+				"half the clock size.\n");
+		goto exit;
+	}
 
 	clocklog(&clock, 1, "[main] wlclock: version=%s\n", VERSION);
 
@@ -362,6 +577,8 @@ int main (int argc, char *argv[])
 
 exit:
 	finish_wayland(&clock);
+	free_if_set(clock.output);
+	free_if_set(clock.namespace);
 	return clock.ret;
 }
 

@@ -34,9 +34,9 @@ cairo             = dependency('cairo')
 realtime          = cc.find_library('rt')
 
 if ['dragonfly', 'freebsd', 'netbsd', 'openbsd'].contains(host_machine.system())
-  libepoll        = dependency('epoll-shim', required: get_option('handle-signals'))
+  libepoll = dependency('epoll-shim', required: get_option('handle-signals'))
 else
-  libepoll        = []
+  libepoll = []
 endif
 
 subdir('protocol')

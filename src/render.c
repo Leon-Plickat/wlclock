@@ -62,7 +62,6 @@ static void draw_background (cairo_t *cairo,
 		}
 		else
 		{
-			fputs("here\n", stderr);
 			/* Calculate dimensions of center. */
 			uint32_t cx = x + border_left,
 				cy = y + border_top,
@@ -146,7 +145,8 @@ void render_surface_frame (struct Wlclock_surface *surface)
 			clock->radius_bottom_left, clock->radius_bottom_right,
 			scale, &clock->background_colour, &clock->border_colour);
 
-	// TODO draw clock stuff
+	// TODO draw clock face
+	// TODO draw clock hands to subsurface
 
 	wl_surface_set_buffer_scale(surface->surface, scale);
 	wl_surface_attach(surface->surface, surface->current_buffer->buffer, 0, 0);

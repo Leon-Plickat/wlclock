@@ -29,13 +29,13 @@ struct Wlclock
 	int  ret;
 
 	enum zwlr_layer_shell_v1_layer layer;
-	uint32_t size;
+	int32_t size;
 	char *namespace;
 	int32_t exclusive_zone;
-	uint32_t border_top, border_right, border_bottom, border_left;
-	uint32_t margin_top, margin_right, margin_bottom, margin_left;
-	uint32_t radius_top_left, radius_top_right, radius_bottom_left, radius_bottom_right;
-	uint32_t anchor;
+	int32_t border_top, border_right, border_bottom, border_left;
+	int32_t margin_top, margin_right, margin_bottom, margin_left;
+	int32_t radius_top_left, radius_top_right, radius_bottom_left, radius_bottom_right;
+	int32_t anchor;
 	bool input;
 
 	struct Wlclock_colour background_colour;
