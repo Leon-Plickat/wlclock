@@ -150,22 +150,12 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 	double ir  = scale * 0.075 * size / 2;
 	struct tm tm = *localtime(&clock->now);
 	
-	double phi_step_min   = 2 * PI / 60;
-	double tip_phi_min    = phi_step_min * (tm.tm_min + 45);
-	double back_phi_1_min = phi_step_min * (tm.tm_min + 45 + 20);
-	double back_phi_2_min = phi_step_min * (tm.tm_min + 45 + 40);
-
-	double phi_step_h   = 2 * PI / 12;
-	double tip_phi_h    = phi_step_h * (tm.tm_hour + 9);
-	double back_phi_1_h = phi_step_h * (tm.tm_hour + 9 + 4);
-	double back_phi_2_h = phi_step_h * (tm.tm_hour + 9 + 8);
+	double phi_min_step = 2 * PI / 60;
+	double phi_min      = phi_min_step * (tm.tm_min + 45);
+	double phi_h_step   = 2 * PI / 12;
+	double phi_h        = phi_h_step * (tm.tm_hour + 9);
 	if (! clock->snap)
-	{
-		double prog_phi_step = phi_step_h / 60.0;
-		tip_phi_h    += tm.tm_min * prog_phi_step;
-		back_phi_1_h += tm.tm_min * prog_phi_step;
-		back_phi_2_h += tm.tm_min * prog_phi_step;
-	}
+		phi_h += tm.tm_min * phi_h_step / 60.0;
 
 	cairo_save(cairo);
 	colour_set_cairo_source(cairo, &clock->clock_colour);
@@ -173,16 +163,20 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 	if ( clock->hand_style == STYLE_XCLOCK )
 	{
 		/* Minutes */
-		cairo_move_to(cairo, cxy + mr * cos(tip_phi_min),    cxy + mr * sin(tip_phi_min));
-		cairo_line_to(cairo, cxy + ir * cos(back_phi_1_min), cxy + ir * sin(back_phi_1_min));
-		cairo_line_to(cairo, cxy + ir * cos(back_phi_2_min), cxy + ir * sin(back_phi_2_min));
-		cairo_line_to(cairo, cxy + mr * cos(tip_phi_min),    cxy + mr * sin(tip_phi_min));
+		cairo_move_to(cairo, cxy + mr * cos(phi_min), cxy + mr * sin(phi_min));
+		cairo_line_to(cairo, cxy + ir * cos(phi_min + 2.0 / 3.0 * PI),
+				cxy + ir * sin(phi_min + 2.0 / 3.0 * PI));
+		cairo_line_to(cairo, cxy + ir * cos(phi_min + 4.0 / 3.0 * PI),
+				cxy + ir * sin(phi_min + 4.0 / 3.0 * PI));
+		cairo_line_to(cairo, cxy + mr * cos(phi_min), cxy + mr * sin(phi_min));
 
 		/* Hours */
-		cairo_move_to(cairo, cxy + hr * cos(tip_phi_h),    cxy + hr * sin(tip_phi_h));
-		cairo_line_to(cairo, cxy + ir * cos(back_phi_1_h), cxy + ir * sin(back_phi_1_h));
-		cairo_line_to(cairo, cxy + ir * cos(back_phi_2_h), cxy + ir * sin(back_phi_2_h));
-		cairo_line_to(cairo, cxy + hr * cos(tip_phi_h),    cxy + hr * sin(tip_phi_h));
+		cairo_move_to(cairo, cxy + hr * cos(phi_h),    cxy + hr * sin(phi_h));
+		cairo_line_to(cairo, cxy + ir * cos(phi_h + 2.0 / 3.0 * PI),
+				cxy + ir * sin(phi_h + 2.0 / 3.0 * PI));
+		cairo_line_to(cairo, cxy + ir * cos(phi_h + 4.0 / 3.0 * PI),
+				cxy + ir * sin(phi_h + 4.0 / 3.0 * PI));
+		cairo_line_to(cairo, cxy + hr * cos(phi_h), cxy + hr * sin(phi_h));
 
 		cairo_close_path(cairo);
 		cairo_fill(cairo);
@@ -190,11 +184,12 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 	else if ( clock->hand_style == STYLE_LINES )
 	{
 		/* Minutes */
-		cairo_move_to(cairo, cxy + mr * cos(tip_phi_min), cxy + mr * sin(tip_phi_min));
-		cairo_line_to(cairo, cxy, cxy);
+		cairo_move_to(cairo, cxy + mr * cos(phi_min), cxy + mr * sin(phi_min));
+		cairo_line_to(cairo, cxy + ir * cos(phi_min + PI), cxy + ir * sin(phi_min + PI));
 
 		/* Hours */
-		cairo_line_to(cairo, cxy + hr * cos(tip_phi_h),    cxy + hr * sin(tip_phi_h));
+		cairo_move_to(cairo, cxy + hr * cos(phi_h), cxy + hr * sin(phi_h));
+		cairo_line_to(cairo, cxy + ir * cos(phi_h + PI), cxy + ir * sin(phi_h +PI));
 
 		cairo_set_line_width(cairo, scale * clock->clock_size);
 		cairo_stroke(cairo);
