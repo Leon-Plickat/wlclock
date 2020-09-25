@@ -32,6 +32,7 @@ wayland_client    = dependency('wayland-client', include_type: 'system')
 wayland_cursor    = dependency('wayland-cursor', include_type: 'system')
 cairo             = dependency('cairo')
 realtime          = cc.find_library('rt')
+math              = cc.find_library('m')
 
 if ['dragonfly', 'freebsd', 'netbsd', 'openbsd'].contains(host_machine.system())
   libepoll = dependency('epoll-shim', required: get_option('handle-signals'))
@@ -53,13 +54,14 @@ executable(
     'src/wlclock.c',
   ),
   dependencies: [
-    wayland_client,
-    wayland_protocols,
-    wayland_cursor,
     cairo,
-    wl_protocols,
-    realtime,
     libepoll,
+    math,
+    realtime,
+    wayland_client,
+    wayland_cursor,
+    wayland_protocols,
+    wl_protocols,
   ],
   include_directories: include_directories('src'),
   install: true,

@@ -470,7 +470,8 @@ static void clock_run (struct Wlclock *clock)
 
 		if ( ret == 0 )
 		{
-			update_all_surfaces(clock);
+			clock->now = time(NULL);
+			// TODO update clock hands
 			continue;
 		}
 		else if ( ret < 0 )

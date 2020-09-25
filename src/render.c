@@ -3,6 +3,8 @@
 #include<stdbool.h>
 #include<unistd.h>
 #include<string.h>
+#include<math.h>
+
 #include<cairo/cairo.h>
 #include<wayland-server.h>
 #include<wayland-client.h>
@@ -15,10 +17,12 @@
 #include"colour.h"
 #include"render.h"
 
+#define PI 3.141592653589793238462643383279502884
+
 static void rounded_rectangle (cairo_t *cairo, uint32_t x, uint32_t y, uint32_t w, uint32_t h,
 		double tl_r, double tr_r, double bl_r, double br_r)
 {
-	double degrees = 3.1415927 / 180.0;
+	double degrees = PI / 180.0;
 	cairo_new_sub_path(cairo);
 	cairo_arc(cairo, x + w - tr_r, y     + tr_r, tr_r, -90 * degrees,   0 * degrees);
 	cairo_arc(cairo, x + w - br_r, y + h - br_r, br_r,   0 * degrees,  90 * degrees);
@@ -99,6 +103,33 @@ static void draw_background (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 	cairo_restore(cairo);
 }
 
+static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensions,
+		int32_t scale, struct Wlclock *clock)
+{
+	double cx  = dimensions->center_x + (dimensions->center_size / 2);
+	double cy  = dimensions->center_y + (dimensions->center_size / 2);
+	double or  = 0.9  * (double)(dimensions->center_size / 2);
+	double ir  = 0.85 * (double)(dimensions->center_size / 2);
+	double bir = 0.8  * (double)(dimensions->center_size / 2);
+	double phi;
+	double phi_step = 2 * PI / 60;
+
+	cairo_save(cairo);
+	for (int i = 0; i < 60; i++)
+	{
+		phi = i * phi_step;
+		cairo_move_to(cairo, cx + or * cos(phi), cy + or * sin(phi));
+		if ( i % 5 == 0 )
+			cairo_line_to(cairo, cx + bir * cos(phi), cy + bir * sin(phi));
+		else
+			cairo_line_to(cairo, cx + ir * cos(phi), cy + ir * sin(phi));
+	}
+	cairo_set_line_width(cairo, 1);
+	colour_set_cairo_source(cairo, &clock->clock_colour);
+	cairo_stroke(cairo);
+	cairo_restore(cairo);
+}
+
 static void clear_buffer (cairo_t *cairo)
 {
 	cairo_save(cairo);
@@ -124,8 +155,8 @@ void render_surface_frame (struct Wlclock_surface *surface)
 	clear_buffer(cairo);
 
 	draw_background(cairo, &surface->dimensions, scale, clock);
+	draw_clock_face(cairo, &surface->dimensions, scale, clock);
 
-	// TODO draw clock face
 	// TODO draw clock hands to subsurface
 
 	wl_surface_set_buffer_scale(surface->surface, scale);
