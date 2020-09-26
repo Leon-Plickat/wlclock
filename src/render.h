@@ -5,6 +5,7 @@
 
 struct Wlclock_surface;
 
-void schedule_frame (struct Wlclock_surface *surface, bool background, bool hands);
+void render_background_frame (struct Wlclock_surface *surface);
+void render_hands_frame (struct Wlclock_surface *surface);
 
 #endif

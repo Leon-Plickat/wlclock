@@ -26,9 +26,6 @@ struct Wlclock_surface
 	struct Wlclock_buffer  hands_buffers[2];
 	struct Wlclock_buffer *current_hands_buffer;
 	bool configured;
-
-	struct wl_callback *frame_callback;
-	bool background_dirty, hands_dirty;
 };
 
 bool create_surface (struct Wlclock_output *output);
