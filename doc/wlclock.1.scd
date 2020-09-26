@@ -100,6 +100,13 @@ but a desktop-widget.
 	If this flag is used, the hour hand will instantly snap to the next position
 	once the new hour begins, instead of slowly progressing over the hour.
 
+# COLOURS
+wlclock can parse hex code colours and read RGB values directly.
+
+The supported formats are "#RRGGBB", "#RRGGBBAA", "0xRRGGBB" and "0xRRGGBBAA"
+for hex code colours and "rgb(rrr,ggg,bbb)" and "rgba(rrr,ggg,bbb,aaa)" for RGB
+colours.
+
 
 # AUTHORS
 Leon Henrik Plickat <leonhenrik.plickat@stud.uni-goettingen.de>
