@@ -7,12 +7,12 @@ wlclock - A digital analog clock for Wayland
 # DESCRIPTION
 wlclock displays an analog clock on Wayland desktops.
 
+wlclock is inspired by xclock(1) and the default configuration has been chosen
+to mimic it. However unlike xclock, wlclock is not a regular window but a
+desktop-widget.
+
 A Wayland compositor must implement the Layer-Shell and XDG-Output for wlclock
 to work.
-
-wlclock is heavily inspired by xclock(1) and the default configuration has been
-chosen to mimic xclock. However unlike xclock, wlclock is not a regular window
-but a desktop-widget.
 
 # OPTIONS
 *-h*, *--help*
@@ -39,10 +39,10 @@ but a desktop-widget.
 	The colour of clock elements. The default is "#000000".
 
 *--corner-radius* <radius>, *--corner-radius* <top-left> <top-right> <bottom-right> <bottom-left>
-	The radius of the corners. Expects either one argument, to set the radius of
-	all corners, or four arguments, to set the individual corner radii. The
-	default radius is 5. If set to sufficiently high values, wlclock will be
-	completely round. Set to 0 to disable corner roundness.
+	The radius of the corners. Expects either one argument, to set the radius
+	of all corners, or four arguments, to set the individual corner radii. If
+	set to sufficiently high values, wlclock will be completely round. Set to 0
+	to disable corner roundness. The default radius is 0.
 
 *--exclusive-zone* <option>
 	Exclusive zone of the surface. Can be "true", "false" or "stationary". If

@@ -2,6 +2,12 @@
 
 wlclock is a digital analog clock for Wayland desktops.
 
+wlclock is inspired by xclock(1) and the default configuration has been chosen
+to mimic it. However unlike xclock, wlclock is not a regular window but a
+desktop-widget.
+
+A Wayland compositor must implement the Layer-Shell and XDG-Output for wlclock
+to work.
 
 ## Building
 
@@ -18,6 +24,7 @@ and `scdoc` to generate the manpage.
 
 
 ## Contributing
+
 **Contributions are welcome!** Read `CONTRIBUTING.md` to find out how you can
 contribute. Do not be afraid, it is really not that complicated.
 
