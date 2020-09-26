@@ -38,9 +38,6 @@ but a desktop-widget.
 *--clock-colour* <colour>
 	The colour of clock elements. The default is "#000000".
 
-*--clock-face-size* <size>
-	The size of the minute markers on the clock face. The default is 1.
-
 *--corner-radius* <radius>, *--corner-radius* <top-left> <top-right> <bottom-right> <bottom-left>
 	The radius of the corners. Expects either one argument, to set the radius of
 	all corners, or four arguments, to set the individual corner radii. The
@@ -57,6 +54,14 @@ but a desktop-widget.
 	freely place other surfaces over or under the surface of wlclock. The
 	default is "stationary". The exact implementation is compositor dependant;
 	A compositor may choose to ignore the requested exclusive zone of surfaces.
+
+*--face-line-size* <size>
+	The width of lines on the clock face, such as the minute markers.
+	The default is 1.
+
+*--hand-line-size* <size>
+	The width of lines of the clock hands, if hand style is set to "lines".
+	The default is 1.
 
 *--hand-style* <style>
 	Style of the clock hands. Can be "xclock", where wlclock draws xclock-esque

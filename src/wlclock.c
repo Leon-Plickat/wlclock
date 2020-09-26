@@ -181,9 +181,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		BORDER_COLOUR,
 		BORDER_SIZE,
 		CLOCK_COLOUR,
-		CLOCK_FACE_SIZE,
 		CORNER_RADIUS,
 		EXCLUSIVE_ZONE,
+		FACE_LINE_SIZE,
+		HAND_LINE_SIZE,
 		HAND_STYLE,
 		LAYER,
 		MARGIN,
@@ -204,9 +205,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		{"border-colour",     required_argument, NULL, BORDER_COLOUR},
 		{"border-size",       required_argument, NULL, BORDER_SIZE},
 		{"clock-colour",      required_argument, NULL, CLOCK_COLOUR},
-		{"clock-face-size",   required_argument, NULL, CLOCK_FACE_SIZE},
 		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
 		{"exclusive-zone",    required_argument, NULL, EXCLUSIVE_ZONE},
+		{"face-line-size",    required_argument, NULL, FACE_LINE_SIZE},
+		{"hand-line-size",    required_argument, NULL, HAND_LINE_SIZE},
 		{"hand-style",        required_argument, NULL, HAND_STYLE},
 		{"layer",             required_argument, NULL, LAYER},
 		{"margin",            required_argument, NULL, MARGIN},
@@ -228,9 +230,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --border-colour      Border colour.\n"
 		"      --border-size        Size of the border.\n"
 		"      --clock-colour       Colour of the clock elements.\n"
-		"      --clock-face-size    Size of clock face lines.\n"
 		"      --corner-radius      Corner radii.\n"
 		"      --exclusive-zone     Exclusive zone of the layer surface.\n"
+		"      --face-line-size     Width of lines on the clock face.\n"
+		"      --hand-line-size     Width of lines of the clock hands.\n"
 		"      --hand-style         Style of the clock hands.\n"
 		"      --layer              Layer of the layer surface.\n"
 		"      --margin             Directional margins.\n"
@@ -339,11 +342,20 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 				return false;
 			break;
 
-		case CLOCK_FACE_SIZE:
-			clock->clock_size = atoi(optarg);
-			if ( clock->clock_size < 0 )
+		case FACE_LINE_SIZE:
+			clock->face_line_size = atoi(optarg);
+			if ( clock->face_line_size < 0 )
 			{
-				clocklog(NULL, 0, "ERROR: Size of clock face elements may not be smaller then 0.\n");
+				clocklog(NULL, 0, "ERROR: Face line size may not be smaller than 0.\n");
+				return false;
+			}
+			break;
+
+		case HAND_LINE_SIZE:
+			clock->hand_line_size = atoi(optarg);
+			if ( clock->hand_line_size < 1 )
+			{
+				clocklog(NULL, 0, "ERROR: Hand line size may not be smaller than 1.\n");
 				return false;
 			}
 			break;
@@ -623,7 +635,8 @@ int main (int argc, char *argv[])
 		= clock.radius_top_left = clock.radius_top_right = 0;
 	clock.margin_bottom = clock.margin_top
 		= clock.margin_left = clock.margin_right = 0;
-	clock.clock_size = 1;
+	clock.face_line_size = 1;
+	clock.hand_line_size = 1;
 	clock.hand_style = STYLE_XCLOCK;
 	colour_from_string(&clock.background_colour, "#FFFFFF");
 	colour_from_string(&clock.border_colour,     "#000000");
