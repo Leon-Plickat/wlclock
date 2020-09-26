@@ -177,22 +177,22 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 {
 	enum
 	{
-		ANCHOR,
 		BACKGROUND_COLOUR,
 		BORDER_COLOUR,
 		BORDER_SIZE,
 		CLOCK_COLOUR,
 		CLOCK_FACE_SIZE,
+		CORNER_RADIUS,
 		EXCLUSIVE_ZONE,
+		HAND_STYLE,
 		LAYER,
 		MARGIN,
 		NAMEPSACE,
 		NO_INPUT,
-		SNAP,
 		OUTPUT,
-		CORNER_RADIUS,
+		POSITION,
 		SIZE,
-		HAND_STYLE
+		SNAP
 	};
 
 	static struct option opts[] = {
@@ -200,22 +200,22 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		{"verbose",  no_argument,       NULL, 'v'},
 		{"version",  no_argument,       NULL, 'V'},
 
-		{"anchor",            required_argument, NULL, ANCHOR},
 		{"background-colour", required_argument, NULL, BACKGROUND_COLOUR},
 		{"border-colour",     required_argument, NULL, BORDER_COLOUR},
 		{"border-size",       required_argument, NULL, BORDER_SIZE},
 		{"clock-colour",      required_argument, NULL, CLOCK_COLOUR},
 		{"clock-face-size",   required_argument, NULL, CLOCK_FACE_SIZE},
+		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
 		{"exclusive-zone",    required_argument, NULL, EXCLUSIVE_ZONE},
+		{"hand-style",        required_argument, NULL, HAND_STYLE},
 		{"layer",             required_argument, NULL, LAYER},
 		{"margin",            required_argument, NULL, MARGIN},
 		{"namespace",         required_argument, NULL, NAMEPSACE},
 		{"no-input",          no_argument,       NULL, NO_INPUT},
-		{"snap",              no_argument,       NULL, SNAP},
 		{"output",            required_argument, NULL, OUTPUT},
-		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
+		{"position",          required_argument, NULL, POSITION},
 		{"size",              required_argument, NULL, SIZE},
-		{"hand-style",        required_argument, NULL, HAND_STYLE}
+		{"snap",              no_argument,       NULL, SNAP}
 	};
 
 	const char *usage =
@@ -224,7 +224,6 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"  -h, --help               Show this help text.\n"
 		"  -v, --verbose            Increase verbosity of output.\n"
 		"  -V, --version            Show the version.\n"
-		"      --anchor             Set the layer shell anchors.\n"
 		"      --background-colour  Background colour.\n"
 		"      --border-colour      Border colour.\n"
 		"      --border-size        Size of the border.\n"
@@ -238,6 +237,7 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --namespace          Namespace of the layer surface.\n"
 		"      --no-input           Let inputs surface pass trough the layer surface.\n"
 		"      --output             The output which the clock will be displayed.\n"
+		"      --position           Set the position of the clock.\n"
 		"      --size               Size of the clock.\n"
 		"      --snap               Let the hour hand snap to the next position instead of slowly progressing.\n"
 		"\n";
@@ -261,22 +261,39 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			clock->ret = EXIT_SUCCESS;
 			return false;
 
-		case ANCHOR:
-			args = count_args(optind, argc, argv);
-			if ( args != 4 )
+		case POSITION:
+			if (! strcmp(optarg, "center"))
+				clock->anchor = 0;
+			else if (! strcmp(optarg, "top"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+			else if (! strcmp(optarg, "right"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+			else if (! strcmp(optarg, "bottom"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+			else if (! strcmp(optarg, "left"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+			else if (! strcmp(optarg, "top-left"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+					| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+			else if (! strcmp(optarg, "top-right"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
+					| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+			else if (! strcmp(optarg, "bottom-left"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+					| ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
+			else if (! strcmp(optarg, "bottom-right"))
+				clock->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
+					| ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+			else
 			{
-				clocklog(NULL, 0, "ERROR: Anchor configuration requires four arguments.\n");
+				clocklog(NULL, 0, "ERROR: Unrecognized position \"%s\".\n"
+						"INFO: Possible positisions are 'center', "
+						"'top', 'right', 'bottom', 'left', "
+						"'top-right', 'top-left', 'bottom-right', 'bottom-left'.\n",
+						optarg);
 				return false;
 			}
-			if (is_boolean_true(argv[optind-1]))
-				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
-			if (is_boolean_true(argv[optind]))
-				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-			if (is_boolean_true(argv[optind+1]))
-				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
-			if (is_boolean_true(argv[optind+2]))
-				clock->anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
-			optind += 3; /* Tell getopt() to skip three argv fields. */
+			break;
 			break;
 
 		case BACKGROUND_COLOUR:

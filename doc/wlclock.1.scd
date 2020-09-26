@@ -24,10 +24,6 @@ but a desktop-widget.
 *-v*, *--verbose*
 	Increase verbosity of logging.
 
-*--anchor* <top> <right> <bottom> <left>
-	Set the directional anchors of the layer surface. Requires 4 arguments,
-	each being a boolean "true" or "false". By default all anchors are "false".
-
 *--background-colour* <colour>
 	The background colour of the clock. The default is "#FFFFFF".
 
@@ -51,7 +47,7 @@ but a desktop-widget.
 	default radius is 5. If set to sufficiently high values, wlclock will be
 	completely round. Set to 0 to disable corner roundness.
 
-*--exclusive-zone* <true|false|stationary>
+*--exclusive-zone* <option>
 	Exclusive zone of the surface. Can be "true", "false" or "stationary". If
 	"true", the compositor is informed that it should not obstruct the surface
 	of wlclock with other surfaces. If "false", the compositor is informed that
@@ -62,12 +58,12 @@ but a desktop-widget.
 	default is "stationary". The exact implementation is compositor dependant;
 	A compositor may choose to ignore the requested exclusive zone of surfaces.
 
-*--hand-style* <xclock|lines>
+*--hand-style* <style>
 	Style of the clock hands. Can be "xclock", where wlclock draws xclock-esque
 	triangles, and "lines", where wlclock draws straight lines. The default is
 	"xclock".
 
-*--layer* <background|bottom|top|overlay>
+*--layer* <layer>
 	Layer of the layer surface. Can be "overlay", "top", "bottom" or
 	"background". Typically, "bottom" and "background" will be underneath
 	regular windows, while "top" and "overlay" will be above them, however
@@ -87,10 +83,15 @@ but a desktop-widget.
 	input events; This will make mouse events pass through wlclock to windows
 	beneath it.
 
-*--output* <output|all>
+*--output* <output name>
 	Name of the output on which wlclock should be displayed. Output names
 	are compositor dependant. If set to "all" or "\*", wlclock will be displayed
 	on all outputs, which is the default behaviour.
+
+*--position* <position>
+	Set the position of the clock. Can be "center", "top", "right", "bottom",
+	"left", "top-right", "top-left", "bottom-right" and "bottom-left". Defaults
+	to "center".
 
 *--size* <size>
 	The size of the clock, without borders. The default size is 165.
