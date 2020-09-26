@@ -500,9 +500,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 	return true;
 }
 
-static time_t get_timeout (time_t now)
+/* Timeout until next minute. */
+static time_t get_timeout (void)
 {
-	/* Timeout until the next minute. */
+	time_t now = time(NULL);
 	return ((now / 60 * 60 ) + 60 - now) * 1000;
 }
 
@@ -510,6 +511,9 @@ static void clock_run (struct Wlclock *clock)
 {
 	clocklog(clock, 1, "[main] Starting loop.\n");
 	clock->ret = EXIT_SUCCESS;
+
+	// TODO simpler event loop, other signal handling
+	// while ( wl_display_dispatch(clock->display) != -1 );
 
 	struct pollfd fds[2] = { 0 };
 	size_t wayland_fd = 0;
@@ -556,12 +560,10 @@ static void clock_run (struct Wlclock *clock)
 			}
 		} while ( errno == EAGAIN );
 
-		clock->now = time(NULL);
-		int ret = poll(fds, 2, get_timeout(clock->now));
+		int ret = poll(fds, 2, get_timeout());
 
 		if ( ret == 0 )
 		{
-			clock->now = time(NULL);
 			update_all_hands(clock);
 			continue;
 		}

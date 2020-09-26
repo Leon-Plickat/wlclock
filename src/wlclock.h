@@ -40,8 +40,6 @@ struct Wlclock
 	struct wl_list outputs;
 	char *output;
 
-	time_t now;
-
 	bool loop;
 	int  verbosity;
 	int  ret;

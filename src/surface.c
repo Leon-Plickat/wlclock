@@ -3,6 +3,7 @@
 #include<stdbool.h>
 #include<unistd.h>
 #include<string.h>
+#include<time.h>
 
 #include<cairo/cairo.h>
 #include<wayland-server.h>
@@ -42,6 +43,7 @@ static void layer_surface_handle_configure (void *data,
 		if ( surface->dimensions.center_size < 10 )
 			surface->dimensions.center_size = 10;
 	}
+
 	surface->configured = true;
 	update_surface(surface);
 }
@@ -131,6 +133,9 @@ bool create_surface (struct Wlclock_output *output)
 	surface->hands_surface      = NULL;
 	surface->layer_surface      = NULL;
 	surface->configured         = false;
+	surface->frame_callback     = NULL;
+	surface->background_dirty   = false;
+	surface->hands_dirty        = false;
 
 	if ( NULL == (surface->background_surface = wl_compositor_create_surface(clock->compositor)) )
 	{
@@ -145,6 +150,8 @@ bool create_surface (struct Wlclock_output *output)
 		clocklog(NULL, 0, "ERROR: Compositor did not create layer_surface.\n");
 		return false;
 	}
+	zwlr_layer_surface_v1_add_listener(surface->layer_surface,
+			&layer_surface_listener, surface);
 
 	if ( NULL == (surface->hands_surface = wl_compositor_create_surface(clock->compositor)) )
 	{
@@ -161,11 +168,9 @@ bool create_surface (struct Wlclock_output *output)
 
 	configure_layer_surface(surface);
 	configure_subsurface(surface);
-	zwlr_layer_surface_v1_add_listener(surface->layer_surface,
-			&layer_surface_listener, surface);
-	wl_surface_commit(surface->background_surface);
-	wl_surface_commit(surface->hands_surface);
 
+	wl_surface_commit(surface->hands_surface);
+	wl_surface_commit(surface->background_surface);
 	return true;
 }
 
@@ -173,6 +178,8 @@ void destroy_surface (struct Wlclock_surface *surface)
 {
 	if ( surface == NULL )
 		return;
+	if ( surface->output != NULL )
+		surface->output->surface = NULL;
 	if ( surface->layer_surface != NULL )
 		zwlr_layer_surface_v1_destroy(surface->layer_surface);
 	if ( surface->subsurface != NULL )
@@ -181,6 +188,8 @@ void destroy_surface (struct Wlclock_surface *surface)
 		wl_surface_destroy(surface->background_surface);
 	if ( surface->hands_surface != NULL )
 		wl_surface_destroy(surface->hands_surface);
+	if ( surface->frame_callback != NULL )
+		wl_callback_destroy(surface->frame_callback);
 	finish_buffer(&surface->background_buffers[0]);
 	finish_buffer(&surface->background_buffers[1]);
 	finish_buffer(&surface->hands_buffers[0]);
@@ -203,10 +212,9 @@ void update_surface (struct Wlclock_surface *surface)
 		return;
 	configure_layer_surface(surface);
 	configure_subsurface(surface);
-	render_background_frame(surface);
-	render_hands_frame(surface);
-	wl_surface_commit(surface->background_surface);
+	schedule_frame(surface, true, true);
 	wl_surface_commit(surface->hands_surface);
+	wl_surface_commit(surface->background_surface);
 }
 
 void update_all_surfaces (struct Wlclock *clock)
@@ -225,7 +233,7 @@ void update_all_hands (struct Wlclock *clock)
 	wl_list_for_each_safe(op, tmp, &clock->outputs, link)
 		if ( op->surface != NULL )
 		{
-			render_hands_frame(op->surface);
+			schedule_frame(op->surface, false, true);
 			wl_surface_commit(op->surface->hands_surface);
 			wl_surface_commit(op->surface->background_surface);
 		}

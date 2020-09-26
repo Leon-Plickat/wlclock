@@ -34,9 +34,14 @@ static void output_update_surface (struct Wlclock_output *output)
 	if ( ! output->configured || output->name == NULL )
 		return;
 
-	struct Wlclock *clock = output->clock;
-	if ( clock->output == NULL || ! strcmp(clock->output, output->name) )
-		create_surface(output);
+	if ( output->surface == NULL )
+	{
+		struct Wlclock *clock = output->clock;
+		if ( clock->output == NULL || ! strcmp(clock->output, output->name) )
+			create_surface(output);
+	}
+	else
+		update_surface(output->surface);
 }
 
 static void output_handle_done (void *data, struct wl_output *wl_output)
@@ -47,10 +52,7 @@ static void output_handle_done (void *data, struct wl_output *wl_output)
 	struct Wlclock_output *output = (struct Wlclock_output *)data;
 	clocklog(output->clock, 1, "[output] Atomic update complete: global_name=%d\n",
 				output->global_name);
-	if ( output->surface != NULL )
-		update_surface(output->surface);
-	else
-		output_update_surface(output);
+	output_update_surface(output);
 }
 
 static const struct wl_output_listener output_listener = {

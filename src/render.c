@@ -58,7 +58,7 @@ static void draw_background (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 	if ( radius_bottom_right > center_size / 2 )
 		radius_bottom_right = center_size / 2;
 
-	clocklog(clock, 2, "[render] Render dimensions: size=%d cx=%d cy=%d w=%d h=%d\n",
+	clocklog(clock, 3, "[render] Render dimensions (scaled): size=%d cx=%d cy=%d w=%d h=%d\n",
 			center_size, center_x, center_y, w, h);
 
 	cairo_save(cairo);
@@ -119,9 +119,10 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 	if ( clock->face_line_size == 0 )
 		return;
 
+	/* Radii are choosen to roughly mimic xclock. */
 	double cx  = scale * (dimensions->center_x + (dimensions->center_size / 2));
 	double cy  = scale * (dimensions->center_y + (dimensions->center_size / 2));
-	double or  = scale * 0.9  * dimensions->center_size / 2; /* Radii mimick xclock. */
+	double or  = scale * 0.9  * dimensions->center_size / 2;
 	double ir  = scale * 0.85 * dimensions->center_size / 2;
 	double bir = scale * 0.8  * dimensions->center_size / 2;
 	double phi, phi_step = 2 * PI / 60;
@@ -144,11 +145,14 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 
 static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struct Wlclock *clock)
 {
+	/* Radii are choosen to roughly mimic xclock. */
 	double cxy = scale       * size / 2;
-	double mr  = scale * 0.6 * size / 2; /* Radii mimick xclock. */
+	double mr  = scale * 0.6 * size / 2;
 	double hr  = scale * 0.4 * size / 2;
 	double ir  = scale * 0.075 * size / 2;
-	struct tm tm = *localtime(&clock->now);
+
+	time_t now   =  time(NULL);
+	struct tm tm = *localtime(&now);
 	
 	double phi_min_step = 2 * PI / 60;
 	double phi_min      = phi_min_step * (tm.tm_min + 45);
@@ -206,20 +210,14 @@ static void clear_buffer (cairo_t *cairo)
 	cairo_restore(cairo);
 }
 
-void render_background_frame (struct Wlclock_surface *surface)
+static void render_background_frame (struct Wlclock_surface *surface)
 {
 	struct Wlclock_output *output = surface->output;
 	struct Wlclock        *clock  = output->clock;
 	uint32_t               scale  = output->scale;
+
 	clocklog(clock, 2, "[render] Render background frame: global_name=%d\n",
 			output->global_name);
-
-	/* Get new/next buffer. */
-	if (! next_buffer(&surface->current_background_buffer, clock->shm,
-				surface->background_buffers,
-				surface->dimensions.w * scale,
-				surface->dimensions.h * scale))
-		return;
 
 	cairo_t *cairo = surface->current_background_buffer->cairo;
 	clear_buffer(cairo);
@@ -227,33 +225,115 @@ void render_background_frame (struct Wlclock_surface *surface)
 	draw_background(cairo, &surface->dimensions, scale, clock);
 	draw_clock_face(cairo, &surface->dimensions, scale, clock);
 
-	wl_surface_set_buffer_scale(surface->background_surface, scale);
-	wl_surface_attach(surface->background_surface, surface->current_background_buffer->buffer, 0, 0);
 	wl_surface_damage_buffer(surface->background_surface, 0, 0, INT32_MAX, INT32_MAX);
+	wl_surface_attach(surface->background_surface, surface->current_background_buffer->buffer, 0, 0);
+
+	surface->background_dirty = false;
 }
 
-void render_hands_frame (struct Wlclock_surface *surface)
+static void render_hands_frame (struct Wlclock_surface *surface)
 {
 	struct Wlclock_output *output = surface->output;
 	struct Wlclock        *clock  = output->clock;
 	uint32_t               scale  = output->scale;
+
 	clocklog(clock, 2, "[render] Render hands frame: global_name=%d\n",
 			output->global_name);
-
-	/* Get new/next buffer. */
-	if (! next_buffer(&surface->current_hands_buffer, clock->shm,
-				surface->hands_buffers,
-				surface->dimensions.center_size * scale,
-				surface->dimensions.center_size * scale))
-		return;
 
 	cairo_t *cairo = surface->current_hands_buffer->cairo;
 	clear_buffer(cairo);
 
 	draw_clock_hands(cairo, surface->dimensions.center_size, scale, clock);
 
+	wl_surface_damage_buffer(surface->hands_surface, 0, 0, INT32_MAX, INT32_MAX);
+	wl_surface_attach(surface->hands_surface, surface->current_hands_buffer->buffer, 0, 0);
+
+	surface->hands_dirty = false;
+}
+
+void make_background_dirty (struct Wlclock_surface *surface)
+{
+	if (surface->background_dirty)
+		return;
+
+	struct Wlclock_output *output = surface->output;
+	struct Wlclock        *clock  = output->clock;
+	uint32_t               scale  = output->scale;
+
+	clocklog(clock, 2, "[render] Making background dirty: global_name=%d\n",
+			output->global_name);
+
+	if (! next_buffer(&surface->current_background_buffer, clock->shm,
+				surface->background_buffers,
+				surface->dimensions.w * scale,
+				surface->dimensions.h * scale))
+		return;
+	surface->current_background_buffer->busy = true;
+	wl_surface_set_buffer_scale(surface->background_surface, scale);
+	wl_surface_attach(surface->background_surface, surface->current_background_buffer->buffer, 0, 0);
+
+	surface->background_dirty = true;
+}
+
+void make_hands_dirty (struct Wlclock_surface *surface)
+{
+	if (surface->hands_dirty)
+		return;
+
+	struct Wlclock_output *output = surface->output;
+	struct Wlclock        *clock  = output->clock;
+	uint32_t               scale  = output->scale;
+
+	clocklog(clock, 2, "[render] Making hands dirty: global_name=%d\n",
+			output->global_name);
+
+	if (! next_buffer(&surface->current_hands_buffer, clock->shm,
+				surface->hands_buffers,
+				surface->dimensions.center_size * scale,
+				surface->dimensions.center_size * scale))
+		return;
+	surface->current_hands_buffer->busy = true;
 	wl_surface_set_buffer_scale(surface->hands_surface, scale);
 	wl_surface_attach(surface->hands_surface, surface->current_hands_buffer->buffer, 0, 0);
-	wl_surface_damage_buffer(surface->hands_surface, 0, 0, INT32_MAX, INT32_MAX);
+
+	surface->hands_dirty = true;
+}
+
+static void frame_handle_done (void *data, struct wl_callback *callback, uint32_t time)
+{
+	struct Wlclock_surface *surface = (struct Wlclock_surface *)data;
+	wl_callback_destroy(surface->frame_callback);
+	surface->frame_callback = NULL;
+	clocklog(surface->output->clock, 2, "[render] Frame callback: "
+			"global-name=%d background=%d hands=%d.\n",
+			surface->output->global_name,
+			surface->background_dirty, surface->hands_dirty);
+	if (surface->background_dirty)
+		render_background_frame(surface);
+	if (surface->hands_dirty)
+		render_hands_frame(surface);
+	wl_surface_commit(surface->hands_surface);
+	wl_surface_commit(surface->background_surface);
+}
+
+static const struct wl_callback_listener frame_callback_listener = {
+	.done = frame_handle_done
+};
+
+void schedule_frame (struct Wlclock_surface *surface, bool background, bool hands)
+{
+	if (! surface->configured)
+		return;
+	clocklog(surface->output->clock, 2, "[render] Scheduling frame: "
+			"global-name=%d background=%d hands=%d\n",
+			surface->output->global_name, background, hands);
+	if (background)
+		make_background_dirty(surface);
+	if (hands)
+		make_hands_dirty(surface);
+	if ( surface->frame_callback != NULL )
+		return;
+	surface->frame_callback = wl_surface_frame(surface->background_surface);
+	wl_callback_add_listener(surface->frame_callback, &frame_callback_listener, surface);
 }
 
