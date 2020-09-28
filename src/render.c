@@ -116,7 +116,7 @@ static void draw_background (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensions,
 		int32_t scale, struct Wlclock *clock)
 {
-	if ( clock->face_line_size == 0 )
+	if ( clock->marking_width == 0 )
 		return;
 
 	/* Radii are choosen to roughly mimic xclock. */
@@ -137,7 +137,7 @@ static void draw_clock_face (cairo_t *cairo, struct Wlclock_dimensions *dimensio
 		else
 			cairo_line_to(cairo, cx + ir * cos(phi), cy + ir * sin(phi));
 	}
-	cairo_set_line_width(cairo, clock->face_line_size * scale);
+	cairo_set_line_width(cairo, clock->marking_width * scale);
 	colour_set_cairo_source(cairo, &clock->clock_colour);
 	cairo_stroke(cairo);
 	cairo_restore(cairo);
@@ -164,8 +164,10 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 	cairo_save(cairo);
 	colour_set_cairo_source(cairo, &clock->clock_colour);
 
-	if ( clock->hand_style == STYLE_XCLOCK )
+	if ( clock->hand_width == 0 )
 	{
+		/* Xclock-esque clock hands. Not pixel-perfect, but close enough. */
+
 		/* Minutes */
 		cairo_move_to(cairo, cxy + mr * cos(phi_min), cxy + mr * sin(phi_min));
 		cairo_line_to(cairo, cxy + ir * cos(phi_min + 2.0 / 3.0 * PI),
@@ -185,7 +187,7 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 		cairo_close_path(cairo);
 		cairo_fill(cairo);
 	}
-	else if ( clock->hand_style == STYLE_LINES )
+	else
 	{
 		/* Minutes */
 		cairo_move_to(cairo, cxy + mr * cos(phi_min), cxy + mr * sin(phi_min));
@@ -195,7 +197,7 @@ static void draw_clock_hands (cairo_t *cairo, int32_t size, int32_t scale, struc
 		cairo_move_to(cairo, cxy + hr * cos(phi_h), cxy + hr * sin(phi_h));
 		cairo_line_to(cairo, cxy + ir * cos(phi_h + PI), cxy + ir * sin(phi_h +PI));
 
-		cairo_set_line_width(cairo, scale * clock->hand_line_size);
+		cairo_set_line_width(cairo, scale * clock->hand_width);
 		cairo_stroke(cairo);
 	}
 

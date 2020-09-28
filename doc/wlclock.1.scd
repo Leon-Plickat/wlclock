@@ -55,18 +55,9 @@ to work.
 	default is "stationary". The exact implementation is compositor dependant;
 	A compositor may choose to ignore the requested exclusive zone of surfaces.
 
-*--face-line-size* <size>
-	The width of lines on the clock face, such as the minute markers.
-	The default is 1.
-
-*--hand-line-size* <size>
-	The width of lines of the clock hands, if hand style is set to "lines".
-	The default is 1.
-
-*--hand-style* <style>
-	Style of the clock hands. Can be "xclock", where wlclock draws xclock-esque
-	triangles, and "lines", where wlclock draws straight lines. The default is
-	"xclock".
+*--hand-width* <size>
+	The width of the clock hands. If set to 0, wlclock will draw xclock-like
+	clock hands. The default is 0.
 
 *--layer* <layer>
 	Layer of the layer surface. Can be "overlay", "top", "bottom" or
@@ -78,6 +69,9 @@ to work.
 *--margin* <size>, *--margin* <top> <right> <bottom> <left>
 	Set the margin. Requires either one argument, to set all margins, or four
 	arguments, to set the margins individually. The default margin is 0.
+
+*--marking-width* <size>
+	The width of the markings on the clock face. The default is 1.
 
 *--namespace* <namespace>
 	The namespace of the layers surface. Some compositors may treat layer

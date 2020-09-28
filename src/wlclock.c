@@ -183,11 +183,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		CLOCK_COLOUR,
 		CORNER_RADIUS,
 		EXCLUSIVE_ZONE,
-		FACE_LINE_SIZE,
-		HAND_LINE_SIZE,
-		HAND_STYLE,
+		HAND_WIDTH,
 		LAYER,
 		MARGIN,
+		MARKING_WIDTH,
 		NAMEPSACE,
 		NO_INPUT,
 		OUTPUT,
@@ -207,11 +206,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		{"clock-colour",      required_argument, NULL, CLOCK_COLOUR},
 		{"corner-radius",     required_argument, NULL, CORNER_RADIUS},
 		{"exclusive-zone",    required_argument, NULL, EXCLUSIVE_ZONE},
-		{"face-line-size",    required_argument, NULL, FACE_LINE_SIZE},
-		{"hand-line-size",    required_argument, NULL, HAND_LINE_SIZE},
-		{"hand-style",        required_argument, NULL, HAND_STYLE},
+		{"hand-width",        required_argument, NULL, HAND_WIDTH},
 		{"layer",             required_argument, NULL, LAYER},
 		{"margin",            required_argument, NULL, MARGIN},
+		{"marking-width",     required_argument, NULL, MARKING_WIDTH},
 		{"namespace",         required_argument, NULL, NAMEPSACE},
 		{"no-input",          no_argument,       NULL, NO_INPUT},
 		{"output",            required_argument, NULL, OUTPUT},
@@ -232,11 +230,10 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 		"      --clock-colour       Colour of the clock elements.\n"
 		"      --corner-radius      Corner radii.\n"
 		"      --exclusive-zone     Exclusive zone of the layer surface.\n"
-		"      --face-line-size     Width of lines on the clock face.\n"
-		"      --hand-line-size     Width of lines of the clock hands.\n"
-		"      --hand-style         Style of the clock hands.\n"
+		"      --hand-width         Width of the clock hands.\n"
 		"      --layer              Layer of the layer surface.\n"
 		"      --margin             Directional margins.\n"
+		"      --marking-width      Width of the markings on the clock face.\n"
 		"      --namespace          Namespace of the layer surface.\n"
 		"      --no-input           Let inputs surface pass trough the layer surface.\n"
 		"      --output             The output which the clock will be displayed.\n"
@@ -342,20 +339,20 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 				return false;
 			break;
 
-		case FACE_LINE_SIZE:
-			clock->face_line_size = atoi(optarg);
-			if ( clock->face_line_size < 0 )
+		case MARKING_WIDTH:
+			clock->marking_width = atoi(optarg);
+			if ( clock->marking_width < 0 )
 			{
-				clocklog(NULL, 0, "ERROR: Face line size may not be smaller than 0.\n");
+				clocklog(NULL, 0, "ERROR: Marking width may not be smaller than zero.\n");
 				return false;
 			}
 			break;
 
-		case HAND_LINE_SIZE:
-			clock->hand_line_size = atoi(optarg);
-			if ( clock->hand_line_size < 1 )
+		case HAND_WIDTH:
+			clock->hand_width = atoi(optarg);
+			if ( clock->hand_width < 0 )
 			{
-				clocklog(NULL, 0, "ERROR: Hand line size may not be smaller than 1.\n");
+				clocklog(NULL, 0, "ERROR: Hand width may not be smaller than zero.\n");
 				return false;
 			}
 			break;
@@ -475,20 +472,6 @@ static bool handle_command_flags (struct Wlclock *clock, int argc, char *argv[])
 			{
 				clocklog(NULL, 0, "ERROR: Unreasonably small size \"%d\".\n",
 						clock->dimensions.center_size);
-				return false;
-			}
-			break;
-
-		case HAND_STYLE:
-			if (! strcmp(optarg, "xclock"))
-				clock->hand_style = STYLE_XCLOCK;
-			else if (! strcmp(optarg, "lines"))
-				clock->hand_style = STYLE_LINES;
-			else
-			{
-				clocklog(NULL, 0, "ERROR: Unrecognized hand style \"%s\".\n"
-						"INFO: Possible hand styles are "
-						"'xclock' and 'lines'.\n", optarg);
 				return false;
 			}
 			break;
@@ -637,9 +620,8 @@ int main (int argc, char *argv[])
 		= clock.radius_top_left = clock.radius_top_right = 0;
 	clock.margin_bottom = clock.margin_top
 		= clock.margin_left = clock.margin_right = 0;
-	clock.face_line_size = 1;
-	clock.hand_line_size = 1;
-	clock.hand_style = STYLE_XCLOCK;
+	clock.marking_width = 1;
+	clock.hand_width = 0;
 	colour_from_string(&clock.background_colour, "#FFFFFF");
 	colour_from_string(&clock.border_colour,     "#000000");
 	colour_from_string(&clock.clock_colour,      "#000000");
