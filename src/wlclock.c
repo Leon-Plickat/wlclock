@@ -495,9 +495,6 @@ static void clock_run (struct Wlclock *clock)
 	clocklog(clock, 1, "[main] Starting loop.\n");
 	clock->ret = EXIT_SUCCESS;
 
-	// TODO simpler event loop, other signal handling
-	// while ( wl_display_dispatch(clock->display) != -1 );
-
 	struct pollfd fds[2] = { 0 };
 	size_t wayland_fd = 0;
 	size_t signal_fd = 1;
@@ -545,7 +542,7 @@ static void clock_run (struct Wlclock *clock)
 
 		int ret = poll(fds, 2, get_timeout());
 
-		if ( ret == 0 )
+		if ( ret == 0 ) /* Timeout -> update clock hands. */
 		{
 			update_all_hands(clock);
 			continue;

@@ -1,7 +1,7 @@
 project(
   'wlclock',
   'c',
-  version: '0.1.0',
+  version: '1.0.0',
   license: 'GPLv3',
   default_options: [
     'c_std=c11',
@@ -14,7 +14,7 @@ cc = meson.get_compiler('c')
 
 add_project_arguments(cc.get_supported_arguments([
   '-D_POSIX_C_SOURCE=200809L',
-  '-DVERSION="0.1.0"',
+  '-DVERSION="1.0.0"',
   '-fsigned-char',
   '-Wno-unused-parameter',
   '-Wpointer-arith',
