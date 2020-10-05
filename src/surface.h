@@ -30,9 +30,7 @@ struct Wlclock_surface
 
 bool create_surface (struct Wlclock_output *output);
 void destroy_surface (struct Wlclock_surface *surface);
-void destroy_all_surfaces (struct Wlclock *clock);
 void update_surface (struct Wlclock_surface *surface);
-void update_all_surfaces (struct Wlclock *clock);
 void update_all_hands (struct Wlclock *clock);
 
 #endif

@@ -192,15 +192,6 @@ void destroy_surface (struct Wlclock_surface *surface)
 	free(surface);
 }
 
-void destroy_all_surfaces (struct Wlclock *clock)
-{
-	clocklog(clock, 1, "[surface] Destroying all surfaces.\n");
-	struct Wlclock_output *op, *tmp;
-	wl_list_for_each_safe(op, tmp, &clock->outputs, link)
-		if ( op->surface != NULL )
-			destroy_surface(op->surface);
-}
-
 void update_surface (struct Wlclock_surface *surface)
 {
 	if ( surface == NULL || ! surface->configured )
@@ -211,15 +202,6 @@ void update_surface (struct Wlclock_surface *surface)
 	render_hands_frame(surface);
 	wl_surface_commit(surface->hands_surface);
 	wl_surface_commit(surface->background_surface);
-}
-
-void update_all_surfaces (struct Wlclock *clock)
-{
-	clocklog(clock, 1, "[surface] Updating all surfaces.\n");
-	struct Wlclock_output *op, *tmp;
-	wl_list_for_each_safe(op, tmp, &clock->outputs, link)
-		if ( op->surface != NULL )
-			update_surface(op->surface);
 }
 
 void update_all_hands (struct Wlclock *clock)
