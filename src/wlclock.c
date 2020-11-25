@@ -6,8 +6,10 @@
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
+#ifdef HANDLE_SIGNALS
 #include<sys/signalfd.h>
 #include<signal.h>
+#endif
 
 #include<wayland-server.h>
 #include<wayland-client.h>
@@ -497,7 +499,12 @@ static void clock_run (struct Wlclock *clock)
 
 	struct pollfd fds[2] = { 0 };
 	size_t wayland_fd = 0;
+#ifdef HANDLE_SIGNALS
 	size_t signal_fd = 1;
+	size_t fd_count = 2;
+#else
+	size_t fd_count = 1;
+#endif
 
 	fds[wayland_fd].events = POLLIN;
 	if ( -1 ==  (fds[wayland_fd].fd = wl_display_get_fd(clock->display)) )
@@ -506,6 +513,7 @@ static void clock_run (struct Wlclock *clock)
 		goto error;
 	}
 
+#ifdef HANDLE_SIGNALS
 	sigset_t mask;
 	struct signalfd_siginfo fdsi;
 	sigemptyset(&mask);
@@ -526,6 +534,7 @@ static void clock_run (struct Wlclock *clock)
 				"ERROR: signalfd: %s\n", strerror(errno));
 		goto error;
 	}
+#endif
 
 	while (clock->loop)
 	{
@@ -540,7 +549,7 @@ static void clock_run (struct Wlclock *clock)
 			}
 		} while ( errno == EAGAIN );
 
-		int ret = poll(fds, 2, get_timeout());
+		int ret = poll(fds, fd_count, get_timeout());
 
 		if ( ret == 0 ) /* Timeout -> update clock hands. */
 		{
@@ -565,6 +574,7 @@ static void clock_run (struct Wlclock *clock)
 			goto error;
 		}
 
+#ifdef HANDLE_SIGNALS
 		/* Signal events. */
 		if ( fds[signal_fd].revents & POLLIN )
 		{
@@ -583,16 +593,19 @@ static void clock_run (struct Wlclock *clock)
 			else if ( fdsi.ssi_signo == SIGUSR1 || fdsi.ssi_signo == SIGUSR2 )
 				clocklog(clock, 1, "[main] Received SIGUSR; Ignoring.\n");
 		}
+#endif
 	}
 
 	return;
 error:
 	clock->ret = EXIT_FAILURE;
+#ifdef HANDLE_SIGNALS
 exit:
-	if ( fds[wayland_fd].fd != -1 )
-		close(fds[wayland_fd].fd);
 	if ( fds[signal_fd].fd != -1 )
 		close(fds[signal_fd].fd);
+#endif
+	if ( fds[wayland_fd].fd != -1 )
+		close(fds[wayland_fd].fd);
 	return;
 }
 
